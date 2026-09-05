@@ -1,142 +1,83 @@
-\# Kiến trúc hệ thống — Car Rental AI
+# Kiến trúc hệ thống — Car Rental AI
 
+> Tài liệu chốt tuần 1. Mọi thay đổi phải qua Pull Request + ADR mới.
+> Phiên bản: 1.1 — 09/2026
 
+## 1. Ba tầng kiến trúc
 
-> Tài liệu chốt (freeze) kiến trúc tuần 1. Mọi thay đổi phải qua Pull Request + ADR mới.
-
-> Phiên bản: 1.0 — cập nhật 09/2026
-
-
-
-\## 1. Ba tầng kiến trúc (đừng nhầm với nhau)
-
-
-
-| Tầng | Trả lời câu hỏi | Công cụ |
-
+| Tầng | Câu hỏi | Trả lời của đồ án |
 |---|---|---|
+| Code architecture | Code tổ chức thế nào trong .NET? | **Clean Architecture + Modular Monolith** |
+| System architecture | Hệ thống gồm những service nào? | **Client-Server** |
+| Integration architecture | .NET gọi AI bằng gì? | **Request-Response (HTTP sync)** |
 
-| Code architecture | Code tổ chức bên trong .NET thế nào? | Clean Architecture, 5 project |
+Ánh xạ với ảnh tổng quan kiến trúc: **1.2 Clean/Onion + 2.4 Client-Server (bên trong 2.2) + 3.1 Request-Response**.
 
-| System architecture | Hệ thống gồm những service nào, nói chuyện ra sao? | Sơ đồ mục 2 |
-
-| Integration architecture | .NET gọi AI bằng cơ chế gì? | HTTP sync, mục 3 |
-
-
-
-\## 2. System architecture
-
-
+## 2. System architecture — Client-Server
 
 ```mermaid
-
 flowchart LR
-
-&#x20;   FE\[React + Vite :3000] -->|HTTP JSON + JWT| API\[.NET 10 API :5001]
-
-&#x20;   API -->|EF Core| DB\[(SQL Server :1433)]
-
-&#x20;   API -->|HTTP, timeout 2s, retry 2| AI\[FastAPI AI Service :5002]
-
-&#x20;   AI -->|/predict-price| ML\[XGBoost / Random Forest]
-
-&#x20;   AI -->|/chat| Gemini\[Gemini API]
-
+    FE[React + Vite :3000] -->|HTTP JSON + JWT| API[.NET 10 API :5001]
+    API -->|EF Core| DB[(SQL Server :1433)]
+    API -->|HTTP timeout 2s retry 2| AI[FastAPI :5002]
+    AI -->|/predict-price| ML[XGBoost / RF]
+    AI -->|/chat| Gemini[Gemini API]
 ```
-
-
 
 | Thành phần | Port | Tech | Phụ trách |
-
 |---|---|---|---|
-
 | Frontend | 3000 | React + Vite | Lê Việt Anh |
-
-| .NET API | 5001 | .NET 10, Clean Architecture | Nguyễn Vũ Dũng + Đỗ Anh Tuấn |
-
-| AI Service | 5002 | FastAPI (Python), XGBoost/RF, Gemini | Nguyễn Minh Năng |
-
+| Backend .NET | 5001 | .NET 10, Clean Architecture, Modular Monolith | Nguyễn Vũ Dũng + Đỗ Anh Tuấn |
+| AI Service | 5002 | FastAPI, XGBoost/RF, Gemini | Nguyễn Minh Năng |
 | Database | 1433 | SQL Server | Nguyễn Vũ Dũng |
+| DevOps | — | Docker Compose, GitHub Actions | Vũ Duy Tiến |
 
-| CI/CD + Docker | — | GitHub Actions, Docker Compose | Vũ Duy Tiến |
+> Lưu ý: Backend .NET là **MỘT khối deploy duy nhất (monolith)** nhưng bên trong chia module rõ (mục 4). AI Service là **service độc lập ngoài monolith** để scale riêng phần AI — đây là điểm khác biệt khi phản biện.
 
+## 3. Integration architecture (.NET ↔ AI) — ĐÃ CHỐT
 
+- **Cơ chế:** HTTP request-response đồng bộ.
+- **Timeout:** 2 giây, **Retry:** 2 lần.
+- **Fallback:** AI lỗi/timeout → trả `Car.BasePricePerDay`, flag `isFallback: true`.
+- **Correlation ID:** header `X-Correlation-Id`.
+- **Không dùng** RabbitMQ/Kafka, MassTransit/Wolverine (chỉ có nghĩa với bất đồng bộ).
 
-\## 3. Integration architecture (.NET ↔ AI) — ĐÃ CHỐT
+## 4. Code architecture — Clean Architecture + Modular Monolith (.NET 10)
 
-
-
-\- \*\*Cơ chế:\*\* HTTP request-response đồng bộ. .NET là client, FastAPI là server.
-
-\- \*\*Timeout:\*\* 2 giây. \*\*Retry:\*\* 2 lần.
-
-\- \*\*Fallback:\*\* AI lỗi/hết timeout → API trả giá niêm yết `Car.BasePricePerDay`, đánh dấu `isFallback: true` trong response. Trải nghiệm người dùng không bao giờ chết vì AI.
-
-\- \*\*Correlation ID:\*\* mỗi request sinh 1 GUID, gửi kèm header `X-Correlation-Id`, log ở cả 2 phía để trace.
-
-\- \*\*Không dùng message queue / pub-sub (RabbitMQ, Kafka...):\*\* quyết định giá là đồng bộ, người dùng chờ kết quả ngay. Thêm broker = thêm hạ tầng phải vận hành, không giải quyết vấn đề nào của bài toán này.
-
-\- \*\*MassTransit / Wolverine:\*\* không dùng (chỉ có nghĩa với message bus). \*\*MediatR:\*\* không bắt buộc, chỉ là quy ước code trong Application layer nếu nhóm thấy hữu ích.
-
-
-
-\## 4. Code architecture — Clean Architecture .NET 10
-
-
+Backend là Modular Monolith đặt trong khung Clean Architecture (5 project). Quy tắc phụ thuộc: Domain không tham chiếu gì.
 
 ```
-
 CarRental.sln
-
-├── src/CarRental.Domain          → KHÔNG tham chiếu gì (không EF, không ASP.NET)
-
+├── src/CarRental.Domain          → KHÔNG tham chiếu gì
 ├── src/CarRental.Application     → chỉ tham chiếu Domain
-
-├── src/CarRental.Infrastructure  → tham chiếu Application (EF Core, PDF, HTTP client)
-
-├── src/CarRental.API             → tham chiếu Application + Infrastructure (composition root)
-
-└── tests/CarRental.Tests         → tham chiếu API
-
+├── src/CarRental.Infrastructure  → tham chiếu Application
+├── src/CarRental.API             → tham chiếu Application + Infrastructure
+└── tests/CarRental.Tests
 ```
 
-
-
-Quy tắc phụ thuộc: mũi tên chỉ từ ngoài vào trong. Domain không bao giờ biết đến database hay web.
-
-
-
-\## 5. Quy tắc giá (business rule)
-
-
+Tổ chức theo module nghiệp vụ (chỉ là quy ước đặt folder, không đổi kiến trúc):
 
 ```
+src/CarRental.Domain/
+├── Modules/Cars/          # Car, CarImage
+├── Modules/Bookings/      # Booking, Payment, ReturnRecord
+├── Modules/Customers/     # Customer
+└── Common/                # BaseEntity, Enums
 
+src/CarRental.Application/
+├── Modules/Cars/
+├── Modules/Bookings/
+└── Modules/Customers/
+```
+
+## 5. Quy tắc giá
+
+```
 FinalPricePerDay = COALESCE(OverridePrice, PredictedPrice, Car.BasePricePerDay)
-
-Chặn trong khoảng \[400 000đ, 1 500 000đ] / ngày
-
+Chặn [400.000đ, 1.500.000đ] / ngày
 ```
 
+## 6. Bảo mật & Liên kết
 
-
-\## 6. Bảo mật
-
-
-
-\- JWT Bearer cho mọi endpoint trừ `/api/auth/\*`.
-
-\- Secret (JWT key, Gemini key, chain string) đi qua `.env` local và GitHub Secrets trên CI — \*\*không bao giờ commit vào repo\*\*.
-
-
-
-\## 7. Liên kết
-
-
-
-\- Chi tiết endpoint: \[`api-contract.md`](api-contract.md)
-
-\- Bảng thực thể: \[`../docs/erd.dbml`](erd.dbml)
-
-\- Lý do chọn HTTP sync: xem ADR-001 trong `decisions.md`
-
+- JWT cho mọi endpoint trừ `/api/auth/*`. Secret qua `.env` và GitHub Secrets.
+- Chi tiết endpoint: [api-contract.md](api-contract.md) · ERD: [erd.dbml](erd.dbml) · Quyết định: [decisions.md](decisions.md)
