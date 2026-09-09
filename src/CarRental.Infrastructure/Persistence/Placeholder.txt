@@ -1,0 +1,2 @@
+EF Core DbContext + SQL Server sẽ được TV B thêm ở đây (CarRentalDbContext, entity config, migration).
+Schema nguồn: docs/erd.sql

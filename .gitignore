@@ -480,3 +480,13 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Python virtual environment
+.venv/
+venv/
+*.pyc
+__pycache__/
+
+# Frontend build output
+frontend/dist/
+frontend/.vite/
