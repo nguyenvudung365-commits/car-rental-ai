@@ -26,4 +26,4 @@ jobs:
       run: dotnet build CarRental.slnx --configuration Release --no-restore
 
     - name: Run tests
-      run: dotnet test CarRental.slnx --configuration Release --no-build --verbosity normal
+      run: dotnet test tests/CarRental.Tests/CarRental.Tests.csproj --configuration Release --no-build --verbosity normal
