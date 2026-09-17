@@ -1,38 +1,62 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react';
+import './App.css';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './auth/AuthContext';
+import Layout from './components/Layout';
+import PrivateRoute from './components/PrivateRoute';
 
+// Các trang Khách hàng & Công khai
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import CarListPage from './pages/CarListPage';
+import CarDetailPage from './pages/CarDetailPage';
+import BookingPage from './pages/BookingPage';
+import MyBookingsPage from './pages/MyBookingsPage';
+
+// Các trang Quản trị viên (Admin)
+import AdminBookingsPage from './pages/admin/AdminBookingsPage';
+import AdminReturnPage from './pages/admin/AdminReturnPage';
+import AdminCarImagesPage from './pages/admin/AdminCarImagesPage';
+import AdminReportsPage from './pages/admin/AdminReportsPage';
+
+/**
+ * Component định tuyến chính (App Router) của hệ thống Thuê Xe Car Rental AI.
+ * Quản lý phiên làm việc AuthContext, chia nhóm định tuyến Public, Customer và Admin.
+ */
 function App() {
-  const [health, setHealth] = useState(null)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    fetch('/api/health')
-      .then(res => res.json())
-      .then(data => setHealth(data))
-      .catch(err => setError(err.message))
-  }, [])
-
   return (
-    <div style={{ padding: '2rem', fontFamily: 'system-ui' }}>
-      <h1>Car Rental AI</h1>
-      <p>Skeleton frontend - TV D: Le Viet Anh</p>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            {/* Public Routes - Khách vãng lai và mọi người dùng */}
+            <Route path="/" element={<Navigate to="/cars" replace />} />
+            <Route path="/cars" element={<CarListPage />} />
+            <Route path="/cars/:id" element={<CarDetailPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
-      {health && (
-        <div style={{ marginTop: '1rem', padding: '1rem', background: '#d4edda', borderRadius: '4px' }}>
-          <strong>API Health:</strong> {health.status} | Service: {health.service}
-        </div>
-      )}
+            {/* Customer Routes - Yêu cầu đăng nhập tài khoản Customer hoặc Admin */}
+            <Route element={<PrivateRoute roles={['Customer', 'Admin']} />}>
+              <Route path="/booking/:carId" element={<BookingPage />} />
+              <Route path="/my-bookings" element={<MyBookingsPage />} />
+            </Route>
 
-      {error && (
-        <div style={{ marginTop: '1rem', padding: '1rem', background: '#f8d7da', borderRadius: '4px' }}>
-          <strong>Error:</strong> {error}
-        </div>
-      )}
+            {/* Admin Routes - Chỉ dành riêng cho quyền quản trị viên Admin */}
+            <Route element={<PrivateRoute roles={['Admin']} />}>
+              <Route path="/admin/bookings" element={<AdminBookingsPage />} />
+              <Route path="/admin/returns" element={<AdminReturnPage />} />
+              <Route path="/admin/car-images" element={<AdminCarImagesPage />} />
+              <Route path="/admin/reports" element={<AdminReportsPage />} />
+            </Route>
 
-      <p style={{ marginTop: '2rem', color: '#666' }}>
-        Skeleton includes: React 18 + Vite + Router + API health check
-      </p>
-    </div>
-  )
+            {/* Bắt tất cả các đường dẫn không hợp lệ -> Chuyển hướng về danh sách xe */}
+            <Route path="*" element={<Navigate to="/cars" replace />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
 }
 
-export default App
+export default App;
