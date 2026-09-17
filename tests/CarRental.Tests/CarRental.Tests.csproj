@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CarRental.API\CarRental.API.csproj" />
+    <ProjectReference Include="..\..\src\CarRental.Application\CarRental.Application.csproj" />
   </ItemGroup>
 
 </Project>
