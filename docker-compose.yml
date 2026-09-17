@@ -1,0 +1,90 @@
+services:
+  # SQL Server
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: car-rental-db
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${DB_PASSWORD}
+      MSSQL_PID: Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqldata:/var/opt/mssql
+    networks:
+      - car-rental-net
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$${MSSQL_SA_PASSWORD}" -Q "SELECT 1" -C -No -b
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # .NET API
+  api:
+    build:
+      context: .
+      dockerfile: src/CarRental.API/Dockerfile
+    container_name: car-rental-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5001
+      ConnectionStrings__Default: Server=db,1433;Database=${DB_NAME};User Id=${DB_USER};Password=${DB_PASSWORD};TrustServerCertificate=True
+      JwtSettings__SecretKey: ${JWT_KEY}
+      AiService__BaseUrl: http://ai:5002
+      AiService__TimeoutSeconds: ${AI_TIMEOUT_SECONDS}
+      AiService__RetryCount: ${AI_RETRY_COUNT}
+    ports:
+      - "5001:5001"
+    depends_on:
+      db:
+        condition: service_healthy
+      ai:
+        condition: service_started
+    networks:
+      - car-rental-net
+    healthcheck:
+      test: curl -f http://localhost:5001/health || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # FastAPI AI Service
+  ai:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: car-rental-ai-service
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      PORT: 5002
+    ports:
+      - "5002:5002"
+    networks:
+      - car-rental-net
+    healthcheck:
+      test: curl -f http://localhost:5002/health || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: car-rental-frontend
+    environment:
+      VITE_API_BASE_URL: http://localhost:5001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - car-rental-net
+
+volumes:
+  sqldata:
+
+networks:
+  car-rental-net:
+    driver: bridge
