@@ -113,6 +113,14 @@ React thống nhất TypeScript với team, Vite khởi động nhanh, SPA tách
 
 ---
 
+## ADR-006: MinIO cho lưu trữ ảnh xe
+
+**Quyết định:** Ảnh xe được lưu trong MinIO, tương thích S3, với bucket `car-rental`; không lưu ảnh upload vào `wwwroot`. Chỉ chấp nhận file WebP tối đa 5 MB, kiểm tra cả phần mở rộng, MIME type và magic bytes trước khi lưu. Tên object được sinh bằng GUID để không dùng trực tiếp tên file từ người dùng.
+
+**Tại sao:** MinIO phù hợp môi trường Docker và có thể thay thế bằng S3-compatible storage khi triển khai. Kiểm tra nội dung file thay vì chỉ tin extension giúp tránh upload file sai định dạng.
+
+---
+
 # PHẦN B — PHÂN RÃ CHỨC NĂNG & MÔ TẢ NGHIỆP VỤ
 
 ## B.1 Sơ đồ phân rã chức năng
