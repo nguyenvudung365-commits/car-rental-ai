@@ -68,7 +68,6 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 // --- Dependency Injection: Car ---
 builder.Services.AddScoped<ICarRepository, CarRepository>();
 builder.Services.AddScoped<ICarService, CarService>();
-builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
 // --- Unit of work ---
 builder.Services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());

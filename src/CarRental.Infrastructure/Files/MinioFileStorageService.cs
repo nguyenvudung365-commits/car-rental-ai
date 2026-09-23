@@ -1,4 +1,5 @@
 using CarRental.Application.Common;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Minio;
 using Minio.DataModel.Args;
@@ -48,6 +49,17 @@ public sealed class MinioFileStorageService : IFileStorageService
             .WithContentType("image/webp"), cancellationToken);
 
         return objectKey;
+    }
+
+    public async Task<string> SaveAsync(IFormFile file, string folder)
+    {
+        await using var stream = file.OpenReadStream();
+        return await SaveAsync(stream, file.FileName, file.ContentType, file.Length, folder);
+    }
+
+    public void Delete(string relativePath)
+    {
+        DeleteAsync(relativePath).GetAwaiter().GetResult();
     }
 
     public Task DeleteAsync(string objectKey, CancellationToken cancellationToken = default)
