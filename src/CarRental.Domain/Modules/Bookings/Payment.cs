@@ -2,7 +2,7 @@ using CarRental.Domain.Common;
 
 namespace CarRental.Domain.Modules.Bookings;
 
-/// <summary>Bảng Payment — 1 booking có 1 bản ghi thanh toán.</summary>
+/// <summary>Bảng Payment — một booking có thể có nhiều bản ghi thanh toán.</summary>
 public class Payment : BaseEntity
 {
     public int BookingId { get; set; }

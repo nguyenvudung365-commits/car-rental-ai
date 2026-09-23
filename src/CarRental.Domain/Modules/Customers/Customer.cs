@@ -9,7 +9,7 @@ public class Customer : BaseEntity
     public string FullName { get; set; } = string.Empty;
 
     /// <summary>Số điện thoại — duy nhất (lỗi 409 PHONE_EXISTS).</summary>
-    public string Phone { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
 
     /// <summary>Email — duy nhất (lỗi 409 EMAIL_EXISTS).</summary>
     public string Email { get; set; } = string.Empty;

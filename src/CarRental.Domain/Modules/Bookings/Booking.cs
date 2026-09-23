@@ -40,7 +40,7 @@ public class Booking : BaseEntity
 
     public string? Note { get; set; }
 
-    public Payment? Payment { get; set; }
+    public ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
     public ReturnRecord? ReturnRecord { get; set; }
 }
