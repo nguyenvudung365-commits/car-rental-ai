@@ -211,7 +211,7 @@ const CarListPage = () => {
           {/* Lưới hiển thị các thẻ xe */}
           <div className="car-grid">
             {cars.map((car) => (
-              <CarCard key={car.carId} car={car} />
+              <CarCard key={car.CarId ?? car.carId ?? car.Id ?? car.id} car={car} />
             ))}
           </div>
 

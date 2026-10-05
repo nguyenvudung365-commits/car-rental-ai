@@ -15,16 +15,16 @@ const CarCard = ({ car: carProp, ...rest }) => {
 
   // Hỗ trợ cả 2 cách truyền props: <CarCard car={item} /> hoặc <CarCard {...item} />
   const car = carProp || rest;
-  const {
-    carId,
-    brand,
-    model,
-    carType,
-    licensePlate,
-    basePricePerDay,
-    status,
-    primaryImageUrl,
-  } = car;
+
+  // Lấy thuộc tính với fallback PascalCase → camelCase
+  const carId = car.CarId ?? car.carId ?? car.Id ?? car.id;
+  const brand = car.Brand || car.brand;
+  const model = car.Model || car.model;
+  const carType = car.CarType || car.carType;
+  const licensePlate = car.LicensePlate || car.licensePlate;
+  const basePricePerDay = car.BasePricePerDay ?? car.basePricePerDay;
+  const status = car.Status || car.status;
+  const primaryImageUrl = car.PrimaryImageUrl || car.primaryImageUrl;
 
   // Lấy ảnh đại diện: primaryImageUrl
   const imageUrl = primaryImageUrl || '';
