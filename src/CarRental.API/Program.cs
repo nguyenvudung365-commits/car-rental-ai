@@ -2,6 +2,8 @@ using CarRental.API.Middleware;
 using CarRental.Application.Common;
 using CarRental.Application.Modules.Cars;
 using CarRental.Application.Modules.Customers;
+using CarRental.Application.Modules.Bookings;
+using CarRental.Infrastructure.Ai;
 using CarRental.Infrastructure.Files;
 using CarRental.Infrastructure.Persistence;
 using CarRental.Infrastructure.Persistence.Repository;
@@ -16,9 +18,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<MinioSettings>(
     builder.Configuration.GetSection(MinioSettings.SectionName));
+builder.Services.Configure<AiSettings>(
+    builder.Configuration.GetSection(AiSettings.SectionName));
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IFileStorageService, MinioFileStorageService>();
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+    });
 
 builder.Services.AddCors(options =>
 {
@@ -68,6 +77,18 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 // --- Dependency Injection: Car ---
 builder.Services.AddScoped<ICarRepository, CarRepository>();
 builder.Services.AddScoped<ICarService, CarService>();
+
+// --- Dependency Injection: AI Pricing ---
+var aiSettings = builder.Configuration.GetSection(AiSettings.SectionName).Get<AiSettings>() ?? new AiSettings();
+builder.Services.AddHttpClient<IAiPricingClient, AiPricingClient>(client =>
+{
+    client.BaseAddress = new Uri(aiSettings.BaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(aiSettings.TimeoutSeconds);
+});
+
+// --- Dependency Injection: Booking ---
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IBookingService, BookingService>();
 
 // --- Unit of work ---
 builder.Services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
