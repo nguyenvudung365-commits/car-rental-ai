@@ -29,6 +29,10 @@ public class ExceptionHandlingMiddleware
         {
             await WriteProblem(context, StatusCodes.Status401Unauthorized, ex.Message);
         }
+        catch (ForbiddenException ex)
+        {
+            await WriteProblem(context, StatusCodes.Status403Forbidden, ex.Message);
+        }
     }
 
     private static Task WriteProblem(HttpContext context, int statusCode, string message, string? code = null)
