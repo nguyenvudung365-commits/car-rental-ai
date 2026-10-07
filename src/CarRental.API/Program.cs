@@ -99,6 +99,9 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.Migrate();
 }
 
 app.UseCors();
