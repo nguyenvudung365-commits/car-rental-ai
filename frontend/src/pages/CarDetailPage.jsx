@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import ImageGallery from '../components/ImageGallery';
 import { formatCurrency } from '../utils/formatCurrency';
+import { carTypeLabel, normalizeCarStatus } from '../utils/carLabels';
 import useAuth from '../auth/AuthContext';
 
 /**
@@ -73,14 +74,20 @@ const CarDetailPage = () => {
   };
 
   // Hiển thị huy hiệu trạng thái của xe
-  const renderStatusBadge = (status) => {
+  const renderStatusBadge = (rawStatus) => {
+    const status = normalizeCarStatus(rawStatus);
     switch (status) {
+      case 'SanSang':
       case 'Available':
         return <span className="badge badge-confirmed">Sẵn sàng</span>;
+      case 'DangThue':
       case 'Rented':
         return <span className="badge badge-pending">Đang thuê</span>;
+      case 'BaoTri':
       case 'Maintenance':
         return <span className="badge badge-cancelled">Bảo dưỡng</span>;
+      case 'NgungHoatDong':
+        return <span className="badge">Ngừng hoạt động</span>;
       default:
         return <span className="badge">{status || '—'}</span>;
     }
@@ -123,7 +130,7 @@ const CarDetailPage = () => {
     );
   }
 
-  const isAvailable = car.status === 'Available';
+  const isAvailable = normalizeCarStatus(car.Status ?? car.status) === 'SanSang';
 
   return (
     <div className="page-container">
@@ -132,7 +139,7 @@ const CarDetailPage = () => {
         <Link to="/cars" style={{ color: 'var(--primary-color, #2563eb)', textDecoration: 'none' }}>
           Danh mục xe
         </Link>{' '}
-        / <span>{car.brand} {car.model}</span>
+        / <span>{car.Brand || car.brand} {car.Model || car.model}</span>
       </div>
 
       <div
@@ -145,7 +152,7 @@ const CarDetailPage = () => {
       >
         {/* Cột trái: Bộ sưu tập hình ảnh xe */}
         <div>
-          <ImageGallery images={car.images || []} />
+          <ImageGallery images={car.Images || car.images || []} />
         </div>
 
         {/* Cột phải: Thông số chi tiết & Thao tác đặt xe */}
@@ -161,13 +168,13 @@ const CarDetailPage = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
             <div>
               <h1 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#111827', margin: 0 }}>
-                {car.brand} {car.model}
+                {car.Brand || car.brand} {car.Model || car.model}
               </h1>
               <p className="text-muted" style={{ marginTop: '4px', fontSize: '0.9rem' }}>
-                Biển số: <strong style={{ color: '#374151' }}>{car.licensePlate || 'Chưa cập nhật'}</strong>
+                Biển số: <strong style={{ color: '#374151' }}>{car.LicensePlate || car.licensePlate || 'Chưa cập nhật'}</strong>
               </p>
             </div>
-            <div>{renderStatusBadge(car.status)}</div>
+            <div>{renderStatusBadge(car.Status || car.status)}</div>
           </div>
 
           {/* Mức giá theo ngày */}
@@ -186,7 +193,7 @@ const CarDetailPage = () => {
             <span style={{ fontSize: '0.95rem', color: '#64748b', fontWeight: '500' }}>Giá thuê niêm yết:</span>
             <div>
               <span style={{ fontSize: '1.6rem', fontWeight: '700', color: 'var(--primary-color, #2563eb)' }}>
-                {formatCurrency(car.basePricePerDay)}
+                {formatCurrency(car.BasePricePerDay ?? car.basePricePerDay)}
               </span>
               <span style={{ fontSize: '0.85rem', color: '#64748b' }}> / ngày</span>
             </div>
@@ -207,53 +214,53 @@ const CarDetailPage = () => {
             <tbody>
               <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '10px 0', color: '#6b7280', width: '45%' }}>Hãng xe</td>
-                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{car.brand || '—'}</td>
+                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{car.Brand || car.brand || '—'}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '10px 0', color: '#6b7280' }}>Model</td>
-                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{car.model || '—'}</td>
+                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{car.Model || car.model || '—'}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '10px 0', color: '#6b7280' }}>Loại xe</td>
-                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{car.carType || '—'}</td>
+                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{carTypeLabel(car.CarType ?? car.carType)}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '10px 0', color: '#6b7280' }}>Biển số</td>
-                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{car.licensePlate || '—'}</td>
+                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{car.LicensePlate || car.licensePlate || '—'}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '10px 0', color: '#6b7280' }}>Số ghế</td>
-                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{car.seats ? `${car.seats} chỗ` : '—'}</td>
+                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{(car.Seats ?? car.seats) ? `${car.Seats ?? car.seats} chỗ` : '—'}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '10px 0', color: '#6b7280' }}>Hộp số</td>
-                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{formatTransmission(car.transmission)}</td>
+                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{formatTransmission(car.Transmission || car.transmission)}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '10px 0', color: '#6b7280' }}>Nhiên liệu</td>
-                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{formatFuelType(car.fuelType)}</td>
+                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{formatFuelType(car.FuelType || car.fuelType)}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '10px 0', color: '#6b7280' }}>Năm sản xuất</td>
-                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{car.yearOfManufacture || '—'}</td>
+                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{car.YearOfManufacture || car.yearOfManufacture || '—'}</td>
               </tr>
               <tr>
                 <td style={{ padding: '10px 0', color: '#6b7280' }}>Giá thuê / ngày</td>
                 <td style={{ padding: '10px 0', fontWeight: '600', color: 'var(--primary-color, #2563eb)' }}>
-                  {formatCurrency(car.basePricePerDay)}
+                  {formatCurrency(car.BasePricePerDay ?? car.basePricePerDay)}
                 </td>
               </tr>
             </tbody>
           </table>
 
           {/* Mô tả chi tiết xe */}
-          {car.description && (
+          {(car.Description || car.description) && (
             <div style={{ marginBottom: '24px' }}>
               <h2 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '8px', color: '#1f2937' }}>
                 Mô tả chi tiết
               </h2>
               <p style={{ color: '#4b5563', lineHeight: '1.6', fontSize: '0.95rem', whiteSpace: 'pre-line' }}>
-                {car.description}
+                {car.Description || car.description}
               </p>
             </div>
           )}
@@ -282,7 +289,7 @@ const CarDetailPage = () => {
                 </button>
                 {!isAvailable && (
                   <p className="text-center text-muted" style={{ fontSize: '0.85rem', marginTop: '8px' }}>
-                    Xe đang trong trạng thái <strong>{car.status}</strong>, vui lòng chọn xe khác.
+                    Xe đang trong trạng thái <strong>{normalizeCarStatus(car.Status ?? car.status)}</strong>, vui lòng chọn xe khác.
                   </p>
                 )}
               </div>

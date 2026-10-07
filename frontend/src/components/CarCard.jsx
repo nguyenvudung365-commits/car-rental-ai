@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../utils/formatCurrency';
+import { carStatusLabel, carTypeLabel, normalizeCarStatus } from '../utils/carLabels';
 
 /**
  * Thẻ hiển thị thông tin tóm tắt xe (CarCard)
@@ -15,16 +16,16 @@ const CarCard = ({ car: carProp, ...rest }) => {
 
   // Hỗ trợ cả 2 cách truyền props: <CarCard car={item} /> hoặc <CarCard {...item} />
   const car = carProp || rest;
-  const {
-    carId,
-    brand,
-    model,
-    carType,
-    licensePlate,
-    basePricePerDay,
-    status,
-    primaryImageUrl,
-  } = car;
+
+  // Lấy thuộc tính với fallback PascalCase → camelCase
+  const carId = car.CarId ?? car.carId ?? car.Id ?? car.id;
+  const brand = car.Brand || car.brand;
+  const model = car.Model || car.model;
+  const carType = car.CarType ?? car.carType;
+  const licensePlate = car.LicensePlate || car.licensePlate;
+  const basePricePerDay = car.BasePricePerDay ?? car.basePricePerDay;
+  const status = normalizeCarStatus(car.Status ?? car.status);
+  const primaryImageUrl = car.PrimaryImageUrl || car.primaryImageUrl;
 
   // Lấy ảnh đại diện: primaryImageUrl
   const imageUrl = primaryImageUrl || '';
@@ -46,15 +47,16 @@ const CarCard = ({ car: carProp, ...rest }) => {
 
   // Định dạng hiển thị trạng thái xe
   const renderStatusBadge = () => {
+    const label = carStatusLabel(status);
     switch (status) {
-      case 'Available':
-        return <span className="status-badge status-available">Sẵn sàng</span>;
-      case 'Rented':
-        return <span className="status-badge status-rented">Đang thuê</span>;
-      case 'Maintenance':
-        return <span className="status-badge status-maintenance">Bảo dưỡng</span>;
+      case 'SanSang':
+        return <span className="status-badge status-available">{label}</span>;
+      case 'DangThue':
+        return <span className="status-badge status-rented">{label}</span>;
+      case 'BaoTri':
+        return <span className="status-badge status-maintenance">{label}</span>;
       default:
-        return <span className="status-badge status-default">{status || 'Chưa rõ'}</span>;
+        return <span className="status-badge status-default">{label}</span>;
     }
   };
 
@@ -102,7 +104,7 @@ const CarCard = ({ car: carProp, ...rest }) => {
           <h3 className="car-card-title">
             {brand} {model}
           </h3>
-          {carType && <span className="badge car-type-badge">{carType}</span>}
+          {carType && <span className="badge car-type-badge">{carTypeLabel(carType)}</span>}
         </div>
 
         <div className="car-card-meta">

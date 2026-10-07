@@ -318,8 +318,8 @@ const AdminCarImagesPage = () => {
         >
           <option value="">-- Vui lòng chọn xe từ danh sách ({cars.length} xe) --</option>
           {cars.map((car) => (
-            <option key={car.carId} value={car.id}>
-              {car.brand} {car.model} — Biển số: {car.licensePlate || 'Chưa có'} (Năm {car.yearOfManufacture || '-'})
+            <option key={car.CarId ?? car.carId ?? car.Id ?? car.id} value={car.CarId ?? car.carId ?? car.Id ?? car.id}>
+              {car.Brand || car.brand} {car.Model || car.model} — Biển số: {car.LicensePlate || car.licensePlate || 'Chưa có'} (Năm {car.YearOfManufacture || car.yearOfManufacture || '-'})
             </option>
           ))}
         </select>
@@ -338,7 +338,7 @@ const AdminCarImagesPage = () => {
             }}
           >
             <h2 style={{ fontSize: '1.15rem', fontWeight: '600', color: '#1f2937', marginTop: 0, marginBottom: '14px' }}>
-              Tải Lên Hình Ảnh Mới Cho {selectedCar?.brand} {selectedCar?.model} ({selectedCar?.licensePlate})
+              Tải Lên Hình Ảnh Mới Cho {selectedCar?.Brand || selectedCar?.brand} {selectedCar?.Model || selectedCar?.model} ({selectedCar?.LicensePlate || selectedCar?.licensePlate})
             </h2>
 
             <form onSubmit={handleUploadImage}>
@@ -508,7 +508,7 @@ const AdminCarImagesPage = () => {
                     <div style={{ position: 'relative', height: '160px', backgroundColor: '#f3f4f6' }}>
                       <img
                         src={img.url}
-                        alt={`Ảnh xe ${selectedCar?.brand} ${selectedCar?.model}`}
+                        alt={`Ảnh xe ${selectedCar?.Brand || selectedCar?.brand} ${selectedCar?.Model || selectedCar?.model}`}
                         style={{
                           width: '100%',
                           height: '100%',

@@ -47,7 +47,7 @@ const AdminReturnPage = () => {
         : (response.data?.items || response.data?.data || []);
 
       // Lọc các đơn thuê có trạng thái 'Confirmed'
-      const activeList = allBookings.filter((b) => b.status === 'Confirmed');
+      const activeList = allBookings.filter((b) => (b.Status ?? b.status) === 'Confirmed');
       setConfirmedBookings(activeList);
     } catch (err) {
       console.error('Không thể tải danh sách đơn đã xác nhận:', err);
@@ -63,7 +63,7 @@ const AdminReturnPage = () => {
 
   // Tìm thông tin đơn được chọn hiện tại
   const selectedBookingDetails = confirmedBookings.find(
-    (b) => String(b.id) === String(bookingId)
+    (b) => String(b.Id ?? b.id) === String(bookingId)
   );
 
   // Xử lý khi chọn từ dropdown
@@ -243,11 +243,11 @@ const AdminReturnPage = () => {
                 style={{
                   fontSize: '1.4rem',
                   fontWeight: '700',
-                  color: (result.lateDays || 0) > 0 ? '#dc2626' : '#059669',
+                  color: (result.LateDays ?? result.lateDays ?? 0) > 0 ? '#dc2626' : '#059669',
                   marginTop: '4px',
                 }}
               >
-                {result.lateDays || 0} ngày
+                {result.LateDays ?? result.lateDays ?? 0} ngày
               </div>
             </div>
 
@@ -259,11 +259,11 @@ const AdminReturnPage = () => {
                 style={{
                   fontSize: '1.4rem',
                   fontWeight: '700',
-                  color: (result.lateFee || 0) > 0 ? '#dc2626' : '#374151',
+                  color: (result.LateFee ?? result.lateFee ?? 0) > 0 ? '#dc2626' : '#374151',
                   marginTop: '4px',
                 }}
               >
-                {renderPrice(result.lateFee)}
+                {renderPrice(result.LateFee ?? result.lateFee)}
               </div>
             </div>
 
@@ -279,7 +279,7 @@ const AdminReturnPage = () => {
                   marginTop: '4px',
                 }}
               >
-                {renderPrice(result.totalCharge)}
+                {renderPrice(result.TotalCharge ?? result.totalCharge)}
               </div>
             </div>
           </div>
@@ -345,8 +345,8 @@ const AdminReturnPage = () => {
                   : '-- Chọn đơn từ danh sách đơn đã xác nhận (Confirmed) --'}
               </option>
               {confirmedBookings.map((b) => (
-                <option key={b.id} value={b.id}>
-                  #{b.id} - {b.customerName || 'Khách'} ({b.customerPhone || 'N/A'}) - {b.carBrand} {b.carModel} [{b.licensePlate}] - Hạn trả: {formatDate(b.endDate)}
+                <option key={b.Id ?? b.id} value={b.Id ?? b.id}>
+                  #{b.Id ?? b.id} - {b.CustomerName || b.customerName || 'Khách'} ({b.CustomerPhone || b.customerPhone || 'N/A'}) - {b.CarBrand || b.carBrand} {b.CarModel || b.carModel} [{b.LicensePlate || b.licensePlate}] - Hạn trả: {formatDate(b.EndDate || b.endDate)}
                 </option>
               ))}
             </select>
@@ -395,23 +395,23 @@ const AdminReturnPage = () => {
               }}
             >
               <div style={{ fontWeight: '600', color: '#1e293b', marginBottom: '6px' }}>
-                Thông tin đơn #{selectedBookingDetails.id}:
+                Thông tin đơn #{selectedBookingDetails.Id ?? selectedBookingDetails.id}:
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', color: '#475569' }}>
                 <div>
-                  <strong>Khách hàng:</strong> {selectedBookingDetails.customerName} ({selectedBookingDetails.customerPhone || 'N/A'})
+                  <strong>Khách hàng:</strong> {selectedBookingDetails.CustomerName || selectedBookingDetails.customerName} ({selectedBookingDetails.CustomerPhone || selectedBookingDetails.customerPhone || 'N/A'})
                 </div>
                 <div>
-                  <strong>Xe thuê:</strong> {selectedBookingDetails.carBrand} {selectedBookingDetails.carModel} ({selectedBookingDetails.licensePlate})
+                  <strong>Xe thuê:</strong> {selectedBookingDetails.CarBrand || selectedBookingDetails.carBrand} {selectedBookingDetails.CarModel || selectedBookingDetails.carModel} ({selectedBookingDetails.LicensePlate || selectedBookingDetails.licensePlate})
                 </div>
                 <div>
-                  <strong>Ngày nhận xe:</strong> {formatDate(selectedBookingDetails.startDate)}
+                  <strong>Ngày nhận xe:</strong> {formatDate(selectedBookingDetails.StartDate || selectedBookingDetails.startDate)}
                 </div>
                 <div>
-                  <strong>Hạn trả dự kiến:</strong> {formatDate(selectedBookingDetails.endDate)}
+                  <strong>Hạn trả dự kiến:</strong> {formatDate(selectedBookingDetails.EndDate || selectedBookingDetails.endDate)}
                 </div>
                 <div>
-                  <strong>Giá thuê thỏa thuận:</strong> {renderPrice(selectedBookingDetails.finalPrice)}
+                  <strong>Giá thuê thỏa thuận:</strong> {renderPrice(selectedBookingDetails.FinalPrice ?? selectedBookingDetails.finalPrice)}
                 </div>
               </div>
             </div>

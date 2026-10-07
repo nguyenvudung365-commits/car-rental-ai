@@ -368,6 +368,90 @@
   text-transform: capitalize;
 }
 
+/* CarCard */
+.car-card { cursor: pointer; }
+
+.car-card-image-wrapper {
+  width: 100%;
+  height: 200px;
+  background-color: #e5e7eb;
+}
+
+.car-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.car-card-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+
+.car-card-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 8px;
+}
+
+.car-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.car-card-meta {
+  font-size: 0.85rem;
+  color: var(--gray-color);
+}
+
+.car-card-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.price-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.price-unit {
+  font-size: 0.8rem;
+  color: var(--gray-color);
+}
+
+.car-type-badge {
+  background-color: #e0e7ff;
+  color: #3730a3;
+  white-space: nowrap;
+}
+
+.status-badge {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-available { background-color: #dcfce7; color: #15803d; }
+.status-rented { background-color: #fef3c7; color: #92400e; }
+.status-maintenance { background-color: #fee2e2; color: #b91c1c; }
+.status-default { background-color: #f3f4f6; color: #4b5563; }
+
 .badge-pending {
   background-color: #fef3c7;
   color: #92400e;
