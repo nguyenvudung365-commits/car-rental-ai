@@ -78,7 +78,7 @@ namespace CarRental.Infrastructure.Migrations
 
                     b.HasIndex("CustomerId");
 
-                    b.ToTable("Booking");
+                    b.ToTable("Bookings");
                 });
 
             modelBuilder.Entity("CarRental.Domain.Modules.Bookings.Payment", b =>
@@ -120,7 +120,7 @@ namespace CarRental.Infrastructure.Migrations
 
                     b.HasIndex("BookingId");
 
-                    b.ToTable("Payment");
+                    b.ToTable("Payments");
                 });
 
             modelBuilder.Entity("CarRental.Domain.Modules.Bookings.ReturnRecord", b =>
@@ -169,7 +169,7 @@ namespace CarRental.Infrastructure.Migrations
                     b.HasIndex("BookingId")
                         .IsUnique();
 
-                    b.ToTable("ReturnRecord");
+                    b.ToTable("ReturnRecords");
                 });
 
             modelBuilder.Entity("CarRental.Domain.Modules.Cars.Car", b =>
@@ -342,8 +342,8 @@ namespace CarRental.Infrastructure.Migrations
             modelBuilder.Entity("CarRental.Domain.Modules.Bookings.Payment", b =>
                 {
                     b.HasOne("CarRental.Domain.Modules.Bookings.Booking", "Booking")
-                        .WithOne("Payment")
-                        .HasForeignKey("CarRental.Domain.Modules.Bookings.Payment", "BookingId")
+                        .WithMany("Payments")
+                        .HasForeignKey("BookingId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -374,7 +374,7 @@ namespace CarRental.Infrastructure.Migrations
 
             modelBuilder.Entity("CarRental.Domain.Modules.Bookings.Booking", b =>
                 {
-                    b.Navigation("Payment");
+                    b.Navigation("Payments");
 
                     b.Navigation("ReturnRecord");
                 });

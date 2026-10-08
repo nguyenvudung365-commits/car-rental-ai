@@ -40,10 +40,14 @@ const CarListPage = () => {
         pageSize,
       };
 
-      if (filters.type) params.type = filters.type;
-      if (filters.minPrice) params.minPrice = Number(filters.minPrice);
-      if (filters.maxPrice) params.maxPrice = Number(filters.maxPrice);
-      if (filters.status) params.status = filters.status;
+      if (filters.type) params.CarType = filters.type;
+      if (filters.minPrice) params.MinPrice = Number(filters.minPrice);
+      if (filters.maxPrice) params.MaxPrice = Number(filters.maxPrice);
+      if (filters.status) params.Status = filters.status;
+      params.Page = params.page;
+      params.PageSize = params.pageSize;
+      delete params.page;
+      delete params.pageSize;
 
       const response = await axiosClient.get('/cars', { params });
 
@@ -54,7 +58,7 @@ const CarListPage = () => {
         setTotalCount(data.length);
       } else if (data && Array.isArray(data.items)) {
         setCars(data.items);
-        setTotalCount(data.totalCount ?? data.items.length);
+        setTotalCount(data.total ?? data.totalCount ?? data.items.length);
       } else {
         setCars([]);
         setTotalCount(0);
@@ -121,9 +125,10 @@ const CarListPage = () => {
             <option value="">Tất cả các loại</option>
             <option value="Sedan">Sedan</option>
             <option value="SUV">SUV</option>
-            <option value="Truck">Truck (Bán tải)</option>
-            <option value="Van">Van (Đa dụng)</option>
             <option value="Hatchback">Hatchback</option>
+            <option value="MPV">MPV (Đa dụng)</option>
+            <option value="Pickup">Pickup (Bán tải)</option>
+            <option value="Luxury">Luxury (Hạng sang)</option>
           </select>
         </div>
 
@@ -164,9 +169,10 @@ const CarListPage = () => {
             onChange={(e) => handleFilterChange('status', e.target.value)}
           >
             <option value="">Tất cả trạng thái</option>
-            <option value="Available">Sẵn sàng (Available)</option>
-            <option value="Rented">Đang thuê (Rented)</option>
-            <option value="Maintenance">Bảo dưỡng (Maintenance)</option>
+            <option value="SanSang">Sẵn sàng</option>
+            <option value="DangThue">Đang thuê</option>
+            <option value="BaoTri">Bảo trì</option>
+            <option value="NgungHoatDong">Ngừng hoạt động</option>
           </select>
         </div>
 
@@ -211,7 +217,7 @@ const CarListPage = () => {
           {/* Lưới hiển thị các thẻ xe */}
           <div className="car-grid">
             {cars.map((car) => (
-              <CarCard key={car.carId} car={car} />
+              <CarCard key={car.CarId ?? car.carId ?? car.Id ?? car.id} car={car} />
             ))}
           </div>
 

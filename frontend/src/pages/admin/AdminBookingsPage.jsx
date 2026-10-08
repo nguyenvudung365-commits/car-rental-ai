@@ -6,9 +6,8 @@ import { formatCurrency } from '../../utils/formatCurrency';
  * Trang Quản lý Đơn thuê (AdminBookingsPage)
  * Chức năng:
  * - Xem danh sách tất cả các đơn đặt xe (GET /bookings)
- * - Duyệt đơn thuê chờ duyệt (PUT /bookings/:id/approve)
- * - Hủy đơn thuê kèm lý do (PUT /bookings/:id/cancel)
- * - Ghi đè (override) giá đơn thuê (PUT /bookings/:id/override-price)
+ * - Duyệt đơn thuê chờ duyệt (POST /bookings/:id/confirm)
+ * - Hủy đơn thuê kèm lý do (POST /bookings/:id/cancel)
  * - Bộ lọc trạng thái và tìm kiếm khách hàng/xe
  */
 const AdminBookingsPage = () => {
@@ -25,12 +24,6 @@ const AdminBookingsPage = () => {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelBooking, setCancelBooking] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
-
-  // Trạng thái Modal Override giá
-  const [overrideModalOpen, setOverrideModalOpen] = useState(false);
-  const [overrideBooking, setOverrideBooking] = useState(null);
-  const [newPrice, setNewPrice] = useState('');
-  const [overrideReason, setOverrideReason] = useState('');
 
   // Trạng thái xử lý form modal
   const [actionLoading, setActionLoading] = useState(false);
@@ -72,25 +65,25 @@ const AdminBookingsPage = () => {
 
   /**
    * Duyệt đơn thuê Pending
-   * API Endpoint: PUT /bookings/:id/approve
+   * API Endpoint: POST /bookings/:id/confirm
    */
   const handleApprove = async (booking) => {
-    const confirmMessage = `Bạn có chắc chắn muốn duyệt đơn thuê #${booking.id} của khách hàng ${booking.customerName || 'này'}?`;
+    const confirmMessage = `Bạn có chắc chắn muốn duyệt đơn thuê #${booking.Id} của khách hàng ${booking.CustomerName || 'này'}?`;
     if (!window.confirm(confirmMessage)) return;
 
     try {
       setActionLoading(true);
-      await axiosClient.put(`/bookings/${booking.id}/approve`);
+      await axiosClient.post(`/bookings/${booking.Id}/confirm`);
       setNotification({
         type: 'success',
-        message: `Đã duyệt thành công đơn thuê #${booking.id}!`,
+        message: `Đã duyệt thành công đơn thuê #${booking.Id}!`,
       });
       await fetchBookings();
     } catch (err) {
       console.error('Lỗi khi duyệt đơn:', err);
       setNotification({
         type: 'error',
-        message: err.response?.data?.message || `Không thể duyệt đơn #${booking.id}.`,
+        message: err.response?.data?.message || `Không thể duyệt đơn #${booking.Id}.`,
       });
     } finally {
       setActionLoading(false);
@@ -116,7 +109,7 @@ const AdminBookingsPage = () => {
 
   /**
    * Xác nhận hủy đơn thuê
-   * API Endpoint: PUT /bookings/:id/cancel
+   * API Endpoint: POST /bookings/:id/cancel
    * Request Body: { reason }
    */
   const handleConfirmCancel = async (e) => {
@@ -129,75 +122,18 @@ const AdminBookingsPage = () => {
     try {
       setActionLoading(true);
       setModalError('');
-      await axiosClient.put(`/bookings/${cancelBooking.id}/cancel`, {
+      await axiosClient.post(`/bookings/${cancelBooking.Id}/cancel`, {
         reason: cancelReason.trim(),
       });
       setNotification({
         type: 'success',
-        message: `Đã hủy đơn thuê #${cancelBooking.id} thành công!`,
+        message: `Đã hủy đơn thuê #${cancelBooking.Id} thành công!`,
       });
       closeCancelModal();
       await fetchBookings();
     } catch (err) {
       console.error('Lỗi khi hủy đơn thuê:', err);
       setModalError(err.response?.data?.message || 'Có lỗi xảy ra khi hủy đơn thuê.');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  /**
-   * Mở modal điều chỉnh (override) giá
-   */
-  const openOverrideModal = (booking) => {
-    setOverrideBooking(booking);
-    setNewPrice(booking.finalPrice || '');
-    setOverrideReason('');
-    setModalError('');
-    setOverrideModalOpen(true);
-  };
-
-  const closeOverrideModal = () => {
-    setOverrideModalOpen(false);
-    setOverrideBooking(null);
-    setNewPrice('');
-    setOverrideReason('');
-    setModalError('');
-  };
-
-  /**
-   * Xác nhận ghi đè giá đơn thuê
-   * API Endpoint: PUT /bookings/:id/override-price
-   * Request Body: { newPrice, reason }
-   */
-  const handleConfirmOverridePrice = async (e) => {
-    e.preventDefault();
-    const priceNum = Number(newPrice);
-    if (isNaN(priceNum) || priceNum < 0) {
-      setModalError('Vui lòng nhập mức giá hợp lệ (lớn hơn hoặc bằng 0).');
-      return;
-    }
-    if (!overrideReason.trim()) {
-      setModalError('Vui lòng nhập lý do điều chỉnh giá.');
-      return;
-    }
-
-    try {
-      setActionLoading(true);
-      setModalError('');
-      await axiosClient.put(`/bookings/${overrideBooking.id}/override-price`, {
-        newPrice: priceNum,
-        reason: overrideReason.trim(),
-      });
-      setNotification({
-        type: 'success',
-        message: `Ghi đè giá đơn #${overrideBooking.id} thành công!`,
-      });
-      closeOverrideModal();
-      await fetchBookings();
-    } catch (err) {
-      console.error('Lỗi khi override giá:', err);
-      setModalError(err.response?.data?.message || 'Có lỗi xảy ra khi ghi đè giá.');
     } finally {
       setActionLoading(false);
     }
@@ -232,10 +168,11 @@ const AdminBookingsPage = () => {
   // Badge màu sắc cho các trạng thái đơn đặt xe
   const renderStatusBadge = (status) => {
     const statusMap = {
-      Pending: { label: 'Chờ duyệt', bg: '#fef3c7', text: '#92400e', border: '#fde68a' },
-      Confirmed: { label: 'Đã duyệt', bg: '#dbeafe', text: '#1e40af', border: '#bfdbfe' },
-      Completed: { label: 'Hoàn thành', bg: '#dcfce7', text: '#166534', border: '#bbf7d0' },
-      Cancelled: { label: 'Đã hủy', bg: '#fee2e2', text: '#991b1b', border: '#fecaca' },
+      ChoXacNhan: { label: 'Chờ duyệt', bg: '#fef3c7', text: '#92400e', border: '#fde68a' },
+      DaXacNhan: { label: 'Đã duyệt', bg: '#dbeafe', text: '#1e40af', border: '#bfdbfe' },
+      DangThue: { label: 'Đang thuê', bg: '#e0e7ff', text: '#3730a3', border: '#c7d2fe' },
+      DaTraXe: { label: 'Hoàn thành', bg: '#dcfce7', text: '#166534', border: '#bbf7d0' },
+      DaHuy: { label: 'Đã hủy', bg: '#fee2e2', text: '#991b1b', border: '#fecaca' },
     };
 
     const config = statusMap[status] || {
@@ -266,22 +203,18 @@ const AdminBookingsPage = () => {
 
   // Lọc dữ liệu hiển thị theo trạng thái và từ khóa tìm kiếm
   const filteredBookings = bookings.filter((b) => {
-    const matchesStatus = statusFilter === 'ALL' || b.status === statusFilter;
+    const matchesStatus = statusFilter === 'ALL' || b.Status === statusFilter;
     const searchLower = searchTerm.toLowerCase().trim();
     if (!searchLower) return matchesStatus;
 
-    const customer = (b.customerName || '').toLowerCase();
-    const phone = (b.customerPhone || '').toLowerCase();
-    const carBrand = (b.carBrand || '').toLowerCase();
-    const carModel = (b.carModel || '').toLowerCase();
-    const license = (b.licensePlate || '').toLowerCase();
-    const id = String(b.id || '');
+    const customer = (b.CustomerName || '').toLowerCase();
+    const carName = (b.CarName || '').toLowerCase();
+    const license = (b.LicensePlate || '').toLowerCase();
+    const id = String(b.Id || '');
 
     const matchesSearch =
       customer.includes(searchLower) ||
-      phone.includes(searchLower) ||
-      carBrand.includes(searchLower) ||
-      carModel.includes(searchLower) ||
+      carName.includes(searchLower) ||
       license.includes(searchLower) ||
       id.includes(searchLower);
 
@@ -372,10 +305,11 @@ const AdminBookingsPage = () => {
             }}
           >
             <option value="ALL">Tất cả trạng thái</option>
-            <option value="Pending">Chờ duyệt (Pending)</option>
-            <option value="Confirmed">Đã duyệt (Confirmed)</option>
-            <option value="Completed">Hoàn thành (Completed)</option>
-            <option value="Cancelled">Đã hủy (Cancelled)</option>
+            <option value="ChoXacNhan">Chờ duyệt</option>
+            <option value="DaXacNhan">Đã duyệt</option>
+            <option value="DangThue">Đang thuê</option>
+            <option value="DaTraXe">Hoàn thành</option>
+            <option value="DaHuy">Đã hủy</option>
           </select>
         </div>
 
@@ -481,24 +415,22 @@ const AdminBookingsPage = () => {
                 >
                   <th style={{ padding: '14px 16px' }}>Mã đơn</th>
                   <th style={{ padding: '14px 16px' }}>Khách hàng</th>
-                  <th style={{ padding: '14px 16px' }}>SĐT</th>
                   <th style={{ padding: '14px 16px' }}>Xe thuê</th>
                   <th style={{ padding: '14px 16px' }}>Biển số</th>
                   <th style={{ padding: '14px 16px' }}>Ngày thuê</th>
-                  <th style={{ padding: '14px 16px' }}>Giá cuối</th>
+                  <th style={{ padding: '14px 16px' }}>Tổng giá</th>
                   <th style={{ padding: '14px 16px' }}>Trạng thái</th>
                   <th style={{ padding: '14px 16px', textAlign: 'center' }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody style={{ fontSize: '0.875rem', color: '#1f2937' }}>
                 {filteredBookings.map((b) => {
-                  const isPending = b.status === 'Pending';
-                  const canOverride = b.status === 'Pending' || b.status === 'Confirmed';
-                  const carTitle = `${b.carBrand || ''} ${b.carModel || ''}`.trim() || `Xe #${b.carId}`;
+                  const isPending = b.Status === 'ChoXacNhan';
+                  const carTitle = b.CarName || `Xe #${b.CarId}`;
 
                   return (
                     <tr
-                      key={b.id}
+                      key={b.Id}
                       style={{
                         borderBottom: '1px solid #f3f4f6',
                         transition: 'background-color 0.15s',
@@ -507,13 +439,10 @@ const AdminBookingsPage = () => {
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
                       <td style={{ padding: '14px 16px', fontWeight: '600', color: '#4b5563' }}>
-                        #{b.id}
+                        #{b.Id}
                       </td>
                       <td style={{ padding: '14px 16px', fontWeight: '500' }}>
-                        {b.customerName || 'Khách vãng lai'}
-                      </td>
-                      <td style={{ padding: '14px 16px', color: '#4b5563' }}>
-                        {b.customerPhone || '-'}
+                        {b.CustomerName || 'Khách vãng lai'}
                       </td>
                       <td style={{ padding: '14px 16px', fontWeight: '500', color: '#111827' }}>
                         {carTitle}
@@ -528,19 +457,19 @@ const AdminBookingsPage = () => {
                             fontSize: '0.8125rem',
                           }}
                         >
-                          {b.licensePlate || '-'}
+                          {b.LicensePlate || '-'}
                         </span>
                       </td>
                       <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
-                        {formatDate(b.startDate)}
+                        {formatDate(b.StartDate)}
                         <span style={{ color: '#9ca3af', margin: '0 4px' }}>→</span>
-                        {formatDate(b.endDate)}
+                        {formatDate(b.EndDate)}
                       </td>
                       <td style={{ padding: '14px 16px', fontWeight: '700', color: '#047857', whiteSpace: 'nowrap' }}>
-                        {renderPrice(b.finalPrice)}
+                        {renderPrice(b.TotalPrice)}
                       </td>
                       <td style={{ padding: '14px 16px' }}>
-                        {renderStatusBadge(b.status)}
+                        {renderStatusBadge(b.Status)}
                       </td>
                       <td style={{ padding: '14px 16px', textAlign: 'center' }}>
                         <div
@@ -552,7 +481,7 @@ const AdminBookingsPage = () => {
                             flexWrap: 'nowrap',
                           }}
                         >
-                          {/* Nút Duyệt - chỉ hiển thị khi Pending */}
+                          {/* Nút Duyệt - chỉ hiển thị khi Chờ xác nhận */}
                           {isPending && (
                             <button
                               type="button"
@@ -573,7 +502,7 @@ const AdminBookingsPage = () => {
                             </button>
                           )}
 
-                          {/* Nút Hủy - chỉ hiển thị khi Pending */}
+                          {/* Nút Hủy - chỉ hiển thị khi Chờ xác nhận */}
                           {isPending && (
                             <button
                               type="button"
@@ -594,30 +523,8 @@ const AdminBookingsPage = () => {
                             </button>
                           )}
 
-                          {/* Nút Override giá - hiển thị cho Pending và Confirmed */}
-                          {canOverride && (
-                            <button
-                              type="button"
-                              onClick={() => openOverrideModal(b)}
-                              disabled={actionLoading}
-                              title="Ghi đè giá đơn thuê"
-                              style={{
-                                padding: '6px 10px',
-                                backgroundColor: '#3b82f6',
-                                color: '#ffffff',
-                                borderRadius: '6px',
-                                fontSize: '0.8rem',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              Override giá
-                            </button>
-                          )}
-
                           {/* Khi không còn thao tác nào khả dụng */}
-                          {!isPending && !canOverride && (
+                          {!isPending && (
                             <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>—</span>
                           )}
                         </div>
@@ -633,7 +540,7 @@ const AdminBookingsPage = () => {
 
       {/* =====================================================================
           MODAL HỦY ĐƠN THUÊ (.modal-overlay + .modal)
-          PUT /bookings/:id/cancel with { reason }
+          POST /bookings/:id/cancel with { reason }
           ===================================================================== */}
       {cancelModalOpen && cancelBooking && (
         <div
@@ -667,7 +574,7 @@ const AdminBookingsPage = () => {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#111827' }}>
-                Hủy Đơn Thuê #{cancelBooking.id}
+                Hủy Đơn Thuê #{cancelBooking.Id}
               </h3>
               <button
                 type="button"
@@ -690,10 +597,10 @@ const AdminBookingsPage = () => {
               }}
             >
               <p style={{ margin: '0 0 4px 0' }}>
-                <strong>Khách hàng:</strong> {cancelBooking.customerName || 'N/A'} ({cancelBooking.customerPhone || 'N/A'})
+                <strong>Khách hàng:</strong> {cancelBooking.CustomerName || 'N/A'}
               </p>
               <p style={{ margin: 0 }}>
-                <strong>Xe:</strong> {cancelBooking.carBrand} {cancelBooking.carModel} - Biển số: {cancelBooking.licensePlate}
+                <strong>Xe:</strong> {cancelBooking.CarName} - Biển số: {cancelBooking.LicensePlate}
               </p>
             </div>
 
@@ -771,187 +678,6 @@ const AdminBookingsPage = () => {
                   }}
                 >
                   {actionLoading ? 'Đang xử lý...' : 'Xác nhận hủy'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* =====================================================================
-          MODAL OVERRIDE GIÁ (.modal-overlay + .modal)
-          PUT /bookings/:id/override-price with { newPrice, reason }
-          ===================================================================== */}
-      {overrideModalOpen && overrideBooking && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.55)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: '16px',
-          }}
-          onClick={closeOverrideModal}
-        >
-          <div
-            className="modal"
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '12px',
-              maxWidth: '480px',
-              width: '100%',
-              padding: '24px',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#111827' }}>
-                Điều Chỉnh Giá Đơn #{overrideBooking.id}
-              </h3>
-              <button
-                type="button"
-                onClick={closeOverrideModal}
-                style={{ fontSize: '1.5rem', lineHeight: 1, color: '#9ca3af', cursor: 'pointer' }}
-              >
-                ×
-              </button>
-            </div>
-
-            <div
-              style={{
-                backgroundColor: '#eff6ff',
-                border: '1px solid #dbeafe',
-                borderRadius: '8px',
-                padding: '12px',
-                marginBottom: '16px',
-                fontSize: '0.875rem',
-                color: '#1e40af',
-              }}
-            >
-              <p style={{ margin: '0 0 4px 0' }}>
-                <strong>Khách hàng:</strong> {overrideBooking.customerName || 'N/A'}
-              </p>
-              <p style={{ margin: '0 0 4px 0' }}>
-                <strong>Xe:</strong> {overrideBooking.carBrand} {overrideBooking.carModel} ({overrideBooking.licensePlate})
-              </p>
-              <p style={{ margin: 0 }}>
-                <strong>Giá hiện tại:</strong>{' '}
-                <span style={{ fontWeight: '700', color: '#047857' }}>
-                  {renderPrice(overrideBooking.finalPrice)}
-                </span>
-              </p>
-            </div>
-
-            {modalError && (
-              <div
-                style={{
-                  backgroundColor: '#fee2e2',
-                  color: '#991b1b',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
-                  fontSize: '0.85rem',
-                  marginBottom: '12px',
-                }}
-              >
-                {modalError}
-              </div>
-            )}
-
-            <form onSubmit={handleConfirmOverridePrice}>
-              <div style={{ marginBottom: '14px' }}>
-                <label
-                  htmlFor="newPriceInput"
-                  style={{ display: 'block', marginBottom: '6px', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}
-                >
-                  Giá mới (VNĐ) <span style={{ color: '#dc2626' }}>*</span>
-                </label>
-                <input
-                  id="newPriceInput"
-                  type="number"
-                  min="0"
-                  step="1000"
-                  required
-                  placeholder="Nhập mức giá mới..."
-                  value={newPrice}
-                  onChange={(e) => setNewPrice(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '6px',
-                    border: '1px solid #d1d5db',
-                    fontSize: '0.9rem',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '16px' }}>
-                <label
-                  htmlFor="overrideReason"
-                  style={{ display: 'block', marginBottom: '6px', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}
-                >
-                  Lý do điều chỉnh giá <span style={{ color: '#dc2626' }}>*</span>
-                </label>
-                <textarea
-                  id="overrideReason"
-                  rows={3}
-                  required
-                  placeholder="Nhập lý do override giá (ví dụ: Áp dụng ưu đãi đặc biệt cho khách quen, hỗ trợ sự cố xe...)"
-                  value={overrideReason}
-                  onChange={(e) => setOverrideReason(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '6px',
-                    border: '1px solid #d1d5db',
-                    fontSize: '0.9rem',
-                    outline: 'none',
-                    resize: 'vertical',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button
-                  type="button"
-                  onClick={closeOverrideModal}
-                  disabled={actionLoading}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#e5e7eb',
-                    color: '#374151',
-                    borderRadius: '6px',
-                    fontWeight: '500',
-                    fontSize: '0.875rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Đóng
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  style={{
-                    padding: '8px 18px',
-                    backgroundColor: '#2563eb',
-                    color: '#ffffff',
-                    borderRadius: '6px',
-                    fontWeight: '600',
-                    fontSize: '0.875rem',
-                    cursor: actionLoading ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  {actionLoading ? 'Đang xử lý...' : 'Xác nhận điều chỉnh'}
                 </button>
               </div>
             </form>
