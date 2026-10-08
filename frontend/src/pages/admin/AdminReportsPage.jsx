@@ -570,14 +570,14 @@ const AdminReportsPage = () => {
                   </thead>
                   <tbody style={{ fontSize: '0.9rem', color: '#1f2937' }}>
                     {occupancyData.byCar.map((car, index) => {
-                      const pctVal = getPercentValue(car.occupancyRate);
+                      const pctVal = getPercentValue(car.OccupancyRate ?? car.occupancyRate);
                       // Màu sắc thanh biểu đồ dựa theo tỷ lệ lấp đầy
                       const barColor =
                         pctVal >= 70 ? '#10b981' : pctVal >= 40 ? '#f59e0b' : '#ef4444';
 
                       return (
                         <tr
-                          key={car.carId || index}
+                          key={car.CarId ?? car.carId ?? car.Id ?? car.id ?? index}
                           style={{
                             borderBottom: '1px solid #f3f4f6',
                             transition: 'background-color 0.15s',
@@ -586,7 +586,7 @@ const AdminReportsPage = () => {
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
                           <td style={{ padding: '14px 20px', fontWeight: '600', color: '#6b7280' }}>
-                            #{car.carId}
+                            #{car.CarId ?? car.carId ?? car.Id ?? car.id}
                           </td>
                           <td style={{ padding: '14px 20px' }}>
                             <span
@@ -600,11 +600,11 @@ const AdminReportsPage = () => {
                                 color: '#1f2937',
                               }}
                             >
-                              {car.licensePlate || 'N/A'}
+                              {car.LicensePlate || car.licensePlate || 'N/A'}
                             </span>
                           </td>
                           <td style={{ padding: '14px 20px', fontWeight: '700', color: barColor }}>
-                            {renderPercentage(car.occupancyRate)}
+                            {renderPercentage(car.OccupancyRate ?? car.occupancyRate)}
                           </td>
                           <td style={{ padding: '14px 20px' }}>
                             <div
