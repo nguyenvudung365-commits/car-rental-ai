@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Http;
+
 namespace CarRental.Application.Common;
 
 public interface IFileStorageService
 {
-    Task<string> SaveAsync(Stream content, string fileName, string contentType, long length, string folder, CancellationToken cancellationToken = default);
-    Task DeleteAsync(string objectKey, CancellationToken cancellationToken = default);
+    Task<string> SaveAsync(IFormFile file, string folder);
+    void Delete(string relativePath);
 }
