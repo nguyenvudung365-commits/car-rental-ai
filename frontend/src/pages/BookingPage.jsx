@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { formatCurrency } from '../utils/formatCurrency';
+import { carTypeLabel } from '../utils/carLabels';
 
 export default function BookingPage() {
   const { carId } = useParams();
@@ -114,7 +115,7 @@ export default function BookingPage() {
           )}
           <div style={{ marginLeft: 20 }}>
             <h2 style={{ margin: 0 }}>{car.Brand || car.brand} {car.Model || car.model}</h2>
-            <p style={{ color: '#6b7280', margin: '4px 0' }}>{car.CarType || car.carType} · {car.LicensePlate || car.licensePlate}</p>
+            <p style={{ color: '#6b7280', margin: '4px 0' }}>{carTypeLabel(car.CarType ?? car.carType)} · {car.LicensePlate || car.licensePlate}</p>
             <p style={{ fontSize: 18, fontWeight: 600, color: '#2563eb' }}>{formatCurrency(car.BasePricePerDay ?? car.basePricePerDay)}/ngày</p>
           </div>
         </div>

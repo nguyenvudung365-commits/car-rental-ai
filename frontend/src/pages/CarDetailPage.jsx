@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import ImageGallery from '../components/ImageGallery';
 import { formatCurrency } from '../utils/formatCurrency';
+import { carTypeLabel, normalizeCarStatus } from '../utils/carLabels';
 import useAuth from '../auth/AuthContext';
 
 /**
@@ -73,7 +74,8 @@ const CarDetailPage = () => {
   };
 
   // Hiển thị huy hiệu trạng thái của xe
-  const renderStatusBadge = (status) => {
+  const renderStatusBadge = (rawStatus) => {
+    const status = normalizeCarStatus(rawStatus);
     switch (status) {
       case 'SanSang':
       case 'Available':
@@ -128,7 +130,7 @@ const CarDetailPage = () => {
     );
   }
 
-  const isAvailable = (car.Status ?? car.status) === 'SanSang' || (car.Status ?? car.status) === 'Available';
+  const isAvailable = normalizeCarStatus(car.Status ?? car.status) === 'SanSang';
 
   return (
     <div className="page-container">
@@ -220,7 +222,7 @@ const CarDetailPage = () => {
               </tr>
               <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '10px 0', color: '#6b7280' }}>Loại xe</td>
-                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{car.CarType || car.carType || '—'}</td>
+                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{carTypeLabel(car.CarType ?? car.carType)}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '10px 0', color: '#6b7280' }}>Biển số</td>
@@ -287,7 +289,7 @@ const CarDetailPage = () => {
                 </button>
                 {!isAvailable && (
                   <p className="text-center text-muted" style={{ fontSize: '0.85rem', marginTop: '8px' }}>
-                    Xe đang trong trạng thái <strong>{car.Status || car.status}</strong>, vui lòng chọn xe khác.
+                    Xe đang trong trạng thái <strong>{normalizeCarStatus(car.Status ?? car.status)}</strong>, vui lòng chọn xe khác.
                   </p>
                 )}
               </div>
