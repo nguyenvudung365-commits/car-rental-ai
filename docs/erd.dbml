@@ -1,0 +1,91 @@
+// Car Rental AI - Entity Relationship Diagram
+// Generated: 2026-09-08
+// 6 bảng: Customer, Car, CarImage, Booking, Payment, ReturnRecord
+
+Table Customer {
+  Id int [pk, increment]
+  FullName nvarchar(200) [not null]
+  Phone nvarchar(15) [not null, unique]
+  Email nvarchar(255) [not null, unique]
+  PasswordHash nvarchar(500) [not null]
+  Role int [not null, note: '0=Customer, 1=Staff, 2=Admin']
+  IdentityNumber nvarchar(20) [null]
+  Address nvarchar(500) [null]
+  CreatedAt datetime2 [not null, default: `GETUTCDATE()`]
+  UpdatedAt datetime2 [not null, default: `GETUTCDATE()`]
+  IsDeleted bit [not null, default: 0]
+}
+
+Table Car {
+  Id int [pk, increment]
+  CarType int [not null, note: '0=Sedan, 1=SUV, 2=Hatchback, 3=Minivan, 4=Pickup']
+  Brand nvarchar(100) [not null]
+  Model nvarchar(100) [not null]
+  LicensePlate nvarchar(20) [not null, unique]
+  Seats int [not null]
+  CarAgeYears int [not null]
+  BasePricePerDay decimal(18,2) [not null]
+  Status int [not null, note: '0=Available, 1=Rented, 2=Maintenance, 3=Inactive']
+  OverridePrice decimal(18,2) [null]
+  Description nvarchar(1000) [null]
+  CreatedAt datetime2 [not null, default: `GETUTCDATE()`]
+  UpdatedAt datetime2 [not null, default: `GETUTCDATE()`]
+  IsDeleted bit [not null, default: 0]
+}
+
+Table CarImage {
+  Id int [pk, increment]
+  CarId int [not null, ref: > Car.Id]
+  ImageUrl nvarchar(500) [not null]
+  IsPrimary bit [not null, default: 0]
+  SortOrder int [not null, default: 0]
+  CreatedAt datetime2 [not null, default: `GETUTCDATE()`]
+  UpdatedAt datetime2 [not null, default: `GETUTCDATE()`]
+  IsDeleted bit [not null, default: 0]
+}
+
+Table Booking {
+  Id int [pk, increment]
+  CustomerId int [not null, ref: > Customer.Id]
+  CarId int [not null, ref: > Car.Id]
+  StartDate datetime2 [not null]
+  EndDate datetime2 [not null]
+  PredictedPricePerDay decimal(18,2) [null]
+  FinalPricePerDay decimal(18,2) [not null]
+  TotalPrice decimal(18,2) [not null]
+  IsFallback bit [not null, default: 0]
+  Status int [not null, note: '0=Pending, 1=Confirmed, 2=InProgress, 3=Completed, 4=Cancelled']
+  CorrelationId nvarchar(100) [null]
+  Note nvarchar(1000) [null]
+  CreatedAt datetime2 [not null, default: `GETUTCDATE()`]
+  UpdatedAt datetime2 [not null, default: `GETUTCDATE()`]
+  IsDeleted bit [not null, default: 0]
+}
+
+Table Payment {
+  Id int [pk, increment]
+  BookingId int [not null, unique, ref: - Booking.Id]
+  Amount decimal(18,2) [not null]
+  Method int [not null, note: '0=Cash, 1=BankTransfer, 2=Momo, 3=ZaloPay']
+  Status int [not null, note: '0=Pending, 1=Completed, 2=Failed, 3=Refunded']
+  TransactionCode nvarchar(100) [null]
+  PaidAt datetime2 [null]
+  CreatedAt datetime2 [not null, default: `GETUTCDATE()`]
+  UpdatedAt datetime2 [not null, default: `GETUTCDATE()`]
+  IsDeleted bit [not null, default: 0]
+}
+
+Table ReturnRecord {
+  Id int [pk, increment]
+  BookingId int [not null, unique, ref: - Booking.Id]
+  ReturnedAt datetime2 [not null]
+  LateDays int [not null, default: 0]
+  LateFee decimal(18,2) [not null, default: 0]
+  DamageFee decimal(18,2) [not null, default: 0]
+  DamageNote nvarchar(1000) [null]
+  FinalAmount decimal(18,2) [not null]
+  StaffId int [null, ref: > Customer.Id]
+  CreatedAt datetime2 [not null, default: `GETUTCDATE()`]
+  UpdatedAt datetime2 [not null, default: `GETUTCDATE()`]
+  IsDeleted bit [not null, default: 0]
+}

@@ -1,0 +1,13 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.0
+python-dotenv==1.0.1
+
+# ML libraries (TV C sẽ dùng khi train model)
+# xgboost==2.1.1
+# scikit-learn==1.5.1
+# pandas==2.2.2
+# numpy==2.1.0
+
+# Gemini API (uncomment khi TV C tích hợp)
+# google-generativeai==0.8.0
