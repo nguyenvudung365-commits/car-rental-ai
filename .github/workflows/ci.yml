@@ -1,29 +1,85 @@
-name: CI - Build and Test
+name: CI - PR Validation
 
 on:
-  push:
-    branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, master, develop]
 
 jobs:
-  build-and-test:
+  dotnet-build-and-test:
+    name: .NET Build & Test
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup .NET 10
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
 
-    - name: Restore dependencies
-      run: dotnet restore CarRental.slnx
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/CarRental.slnx') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
-    - name: Build solution
-      run: dotnet build CarRental.slnx --configuration Release --no-restore
+      - name: Restore dependencies
+        run: dotnet restore CarRental.slnx
 
-    - name: Run tests
-      run: dotnet test tests/CarRental.Tests/CarRental.Tests.csproj --configuration Release --no-build --verbosity normal
+      - name: Build solution
+        run: dotnet build CarRental.slnx --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test CarRental.slnx --configuration Release --no-build --verbosity normal
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  ai-service-check:
+    name: AI Service Syntax Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai-service
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Syntax check
+        run: python -m py_compile main.py
