@@ -6,13 +6,13 @@ import { formatCurrency } from '../../utils/formatCurrency';
  * Trang Xử lý Trả xe (AdminReturnPage)
  * Chức năng:
  * - Tiếp nhận xe khách trả sau khi kết thúc hợp đồng
- * - Chọn đơn từ danh sách đơn đã xác nhận (status=Confirmed) hoặc nhập mã đơn
- * - Ghi nhận ngày trả xe thực tế, tình trạng xe (Good/Damaged), ghi chú
+ * - Chọn đơn từ danh sách đơn đang thuê (Status=DangThue) hoặc nhập mã đơn
+ * - Ghi nhận ngày trả xe thực tế, phí hư hỏng và ghi chú hư hỏng
  * - Gửi yêu cầu hoàn tất trả xe: POST /bookings/:bookingId/return
  * - Hiển thị kết quả tính phí trả chậm và tổng thu:
  *   + Số ngày trễ: {lateDays}
  *   + Phí trễ hạn: {lateFee} ₫
- *   + Tổng thu: {totalCharge} ₫
+ *   + Phí hư hỏng và tổng thu (FinalAmount)
  */
 const AdminReturnPage = () => {
   // Trạng thái Form
@@ -22,7 +22,7 @@ const AdminReturnPage = () => {
     const today = new Date();
     return today.toISOString().split('T')[0];
   });
-  const [condition, setCondition] = useState('Good'); // 'Good' hoặc 'Damaged'
+  const [damageFee, setDamageFee] = useState('0');
   const [notes, setNotes] = useState('');
 
   // Trạng thái danh sách đơn đã duyệt (Confirmed) để chọn nhanh
@@ -46,8 +46,8 @@ const AdminReturnPage = () => {
         ? response.data
         : (response.data?.items || response.data?.data || []);
 
-      // Lọc các đơn thuê có trạng thái 'Confirmed'
-      const activeList = allBookings.filter((b) => (b.Status ?? b.status) === 'Confirmed');
+      // Chỉ đơn đang thuê (DangThue) mới nhận trả xe được
+      const activeList = allBookings.filter((b) => (b.Status ?? b.status) === 'DangThue');
       setConfirmedBookings(activeList);
     } catch (err) {
       console.error('Không thể tải danh sách đơn đã xác nhận:', err);
@@ -98,13 +98,19 @@ const AdminReturnPage = () => {
       setResult(null);
 
       // Gọi API POST /bookings/:bookingId/return
+      const fee = Number(damageFee);
+      if (!Number.isFinite(fee) || fee < 0) {
+        setError('Phí hư hỏng phải là số không âm.');
+        setLoading(false);
+        return;
+      }
       const response = await axiosClient.post(`/bookings/${cleanId}/return`, {
-        returnDate,
-        condition,
-        notes: notes.trim(),
+        returnedAt: returnDate,
+        damageFee: fee,
+        damageNote: notes.trim() || null,
       });
 
-      // API trả về { lateDays, lateFee, totalCharge }
+      // API trả về ReturnRecordDto { LateDays, LateFee, DamageFee, FinalAmount, ... }
       setResult(response.data);
 
       // Cập nhật lại danh sách các đơn Confirmed (đơn vừa trả sẽ chuyển thành Completed)
@@ -125,7 +131,7 @@ const AdminReturnPage = () => {
     setBookingId('');
     const today = new Date();
     setReturnDate(today.toISOString().split('T')[0]);
-    setCondition('Good');
+    setDamageFee('0');
     setNotes('');
     setResult(null);
     setError(null);
@@ -279,7 +285,7 @@ const AdminReturnPage = () => {
                   marginTop: '4px',
                 }}
               >
-                {renderPrice(result.TotalCharge ?? result.totalCharge)}
+                {renderPrice(result.FinalAmount ?? result.finalAmount)}
               </div>
             </div>
           </div>
@@ -341,12 +347,12 @@ const AdminReturnPage = () => {
             >
               <option value="">
                 {loadingBookings
-                  ? '-- Đang tải danh sách đơn đã xác nhận... --'
-                  : '-- Chọn đơn từ danh sách đơn đã xác nhận (Confirmed) --'}
+                  ? '-- Đang tải danh sách đơn đang thuê... --'
+                  : '-- Chọn đơn từ danh sách đơn đang thuê --'}
               </option>
               {confirmedBookings.map((b) => (
                 <option key={b.Id ?? b.id} value={b.Id ?? b.id}>
-                  #{b.Id ?? b.id} - {b.CustomerName || b.customerName || 'Khách'} ({b.CustomerPhone || b.customerPhone || 'N/A'}) - {b.CarBrand || b.carBrand} {b.CarModel || b.carModel} [{b.LicensePlate || b.licensePlate}] - Hạn trả: {formatDate(b.EndDate || b.endDate)}
+                  #{b.Id ?? b.id} - {b.CustomerName || 'Khách'} - {b.CarName} [{b.LicensePlate}] - Hạn trả: {formatDate(b.EndDate || b.endDate)}
                 </option>
               ))}
             </select>
@@ -399,10 +405,10 @@ const AdminReturnPage = () => {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', color: '#475569' }}>
                 <div>
-                  <strong>Khách hàng:</strong> {selectedBookingDetails.CustomerName || selectedBookingDetails.customerName} ({selectedBookingDetails.CustomerPhone || selectedBookingDetails.customerPhone || 'N/A'})
+                  <strong>Khách hàng:</strong> {selectedBookingDetails.CustomerName}
                 </div>
                 <div>
-                  <strong>Xe thuê:</strong> {selectedBookingDetails.CarBrand || selectedBookingDetails.carBrand} {selectedBookingDetails.CarModel || selectedBookingDetails.carModel} ({selectedBookingDetails.LicensePlate || selectedBookingDetails.licensePlate})
+                  <strong>Xe thuê:</strong> {selectedBookingDetails.CarName} ({selectedBookingDetails.LicensePlate})
                 </div>
                 <div>
                   <strong>Ngày nhận xe:</strong> {formatDate(selectedBookingDetails.StartDate || selectedBookingDetails.startDate)}
@@ -411,7 +417,7 @@ const AdminReturnPage = () => {
                   <strong>Hạn trả dự kiến:</strong> {formatDate(selectedBookingDetails.EndDate || selectedBookingDetails.endDate)}
                 </div>
                 <div>
-                  <strong>Giá thuê thỏa thuận:</strong> {renderPrice(selectedBookingDetails.FinalPrice ?? selectedBookingDetails.finalPrice)}
+                  <strong>Giá chốt/ngày:</strong> {renderPrice(selectedBookingDetails.FinalPricePerDay)}
                 </div>
               </div>
             </div>
@@ -448,18 +454,21 @@ const AdminReturnPage = () => {
             </span>
           </div>
 
-          {/* Tình trạng xe */}
+          {/* Phí hư hỏng */}
           <div style={{ marginBottom: '20px' }}>
             <label
-              htmlFor="conditionSelect"
+              htmlFor="damageFeeInput"
               style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: '600', color: '#374151' }}
             >
-              Tình trạng xe khi bàn giao <span style={{ color: '#dc2626' }}>*</span>
+              Phí hư hỏng (₫)
             </label>
-            <select
-              id="conditionSelect"
-              value={condition}
-              onChange={(e) => setCondition(e.target.value)}
+            <input
+              id="damageFeeInput"
+              type="number"
+              min="0"
+              step="1000"
+              value={damageFee}
+              onChange={(e) => setDamageFee(e.target.value)}
               disabled={loading}
               style={{
                 width: '100%',
@@ -467,15 +476,10 @@ const AdminReturnPage = () => {
                 borderRadius: '6px',
                 border: '1px solid #d1d5db',
                 fontSize: '0.9rem',
-                backgroundColor: '#ffffff',
                 outline: 'none',
-                cursor: 'pointer',
                 boxSizing: 'border-box',
               }}
-            >
-              <option value="Good">Good (Bình thường / Tình trạng tốt)</option>
-              <option value="Damaged">Damaged (Hỏng hóc / Có tổn hại / Trầy xước)</option>
-            </select>
+            />
           </div>
 
           {/* Ghi chú */}
@@ -484,7 +488,7 @@ const AdminReturnPage = () => {
               htmlFor="notesTextarea"
               style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: '600', color: '#374151' }}
             >
-              Ghi chú biên bản bàn giao
+              Ghi chú hư hỏng / biên bản bàn giao
             </label>
             <textarea
               id="notesTextarea"

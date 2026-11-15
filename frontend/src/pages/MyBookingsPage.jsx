@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axiosClient from '../api/axiosClient';
 import { formatCurrency } from '../utils/formatCurrency';
+import PaymentsModal from '../components/PaymentsModal';
 
 const STATUS_MAP = {
   ChoXacNhan: { label: 'Chờ duyệt',  className: 'badge badge-pending'   },
@@ -10,10 +11,13 @@ const STATUS_MAP = {
   DaHuy:      { label: 'Đã hủy',     className: 'badge badge-cancelled' },
 };
 
+const canPay = (b) => b.Status === 'DaXacNhan' || b.Status === 'DangThue' || b.Status === 'DaTraXe';
+
 export default function MyBookingsPage() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [paymentBooking, setPaymentBooking] = useState(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelBooking, setCancelBooking] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -128,7 +132,7 @@ export default function MyBookingsPage() {
                       <td>{formatCurrency(b.TotalPrice)}</td>
                       <td><span className={st.className}>{st.label}</span></td>
                       <td>
-                        {canCancel ? (
+                        {canCancel && (
                           <button
                             onClick={() => openCancelModal(b)}
                             className="btn btn-sm btn-secondary"
@@ -136,7 +140,13 @@ export default function MyBookingsPage() {
                           >
                             Hủy đơn
                           </button>
-                        ) : '—'}
+                        )}
+                        {canPay(b) && (
+                          <button onClick={() => setPaymentBooking(b)} className="btn btn-sm btn-secondary">
+                            Thanh toán
+                          </button>
+                        )}
+                        {!canCancel && !canPay(b) && '—'}
                       </td>
                     </tr>
                   );
@@ -169,6 +179,15 @@ export default function MyBookingsPage() {
                       style={{ marginTop: 8, backgroundColor: '#ef4444', color: '#fff' }}
                     >
                       Hủy đơn
+                    </button>
+                  )}
+                  {canPay(b) && (
+                    <button
+                      onClick={() => setPaymentBooking(b)}
+                      className="btn btn-sm btn-secondary"
+                      style={{ marginTop: 8 }}
+                    >
+                      Thanh toán
                     </button>
                   )}
                 </div>
@@ -322,6 +341,10 @@ export default function MyBookingsPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {paymentBooking && (
+        <PaymentsModal booking={paymentBooking} onClose={() => setPaymentBooking(null)} />
       )}
     </div>
   );
