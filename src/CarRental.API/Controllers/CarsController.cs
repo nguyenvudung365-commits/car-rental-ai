@@ -49,4 +49,9 @@ public class CarsController : ControllerBase
     [HttpPut("{carId}/images/{imageId}/primary")]
     public async Task<IActionResult> SetPrimaryImage(int carId, int imageId)
     { await _carService.SetPrimaryImageAsync(carId, imageId); return NoContent(); }
+
+    [Authorize(Roles = "Admin,Staff")]
+    [HttpDelete("{carId}/images/{imageId}")]
+    public async Task<IActionResult> DeleteImage(int carId, int imageId)
+    { await _carService.DeleteImageAsync(carId, imageId); return NoContent(); }
 }

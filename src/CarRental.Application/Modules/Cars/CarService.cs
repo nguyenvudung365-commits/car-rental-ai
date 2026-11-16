@@ -120,6 +120,29 @@ public class CarService : ICarService
         await _unitOfWork.SaveChangesAsync();
     }
 
+    public async Task DeleteImageAsync(int carId, int imageId)
+    {
+        var car = await _carRepository.GetByIdAsync(carId, includeImages: true)
+            ?? throw new NotFoundException("Không tìm thấy xe.");
+
+        var target = car.Images.FirstOrDefault(i => i.Id == imageId)
+            ?? throw new NotFoundException("Không tìm thấy ảnh.");
+
+        car.Images.Remove(target);
+
+        // Xóa ảnh đại diện thì chuyển vai trò đại diện sang ảnh còn lại đầu tiên.
+        if (target.IsPrimary)
+        {
+            var next = car.Images.OrderBy(i => i.Id).FirstOrDefault();
+            if (next != null) next.IsPrimary = true;
+        }
+
+        _carRepository.Update(car);
+        await _unitOfWork.SaveChangesAsync();
+
+        _fileStorageService.Delete(target.ImageUrl);
+    }
+
     private static CarDto ToDto(CarEntity car) => new(
         car.Id, car.CarType, car.Brand, car.Model, car.LicensePlate, car.Seats, car.CarAgeYears,
         car.BasePricePerDay, car.Status, car.OverridePrice, car.Description,
