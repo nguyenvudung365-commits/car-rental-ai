@@ -18,6 +18,14 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<ReturnRecord> ReturnRecords => Set<ReturnRecord>();
 
+    public async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> action, CancellationToken ct = default)
+    {
+        await using var tx = await Database.BeginTransactionAsync(ct);
+        var result = await action();
+        await tx.CommitAsync(ct);
+        return result;
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

@@ -45,4 +45,11 @@ public class CarRepository : ICarRepository
     public async Task AddAsync(CarEntity car) => await _context.Cars.AddAsync(car);
     public void Update(CarEntity car) => _context.Cars.Update(car);
     public void Delete(CarEntity car) => _context.Cars.Remove(car);
+
+    public Task LockForBookingAsync(int carId) =>
+        _context.Cars
+            .FromSqlInterpolated($"SELECT * FROM Cars WITH (UPDLOCK, ROWLOCK) WHERE Id = {carId}")
+            .AsNoTracking()
+            .Select(c => c.Id)
+            .FirstOrDefaultAsync();
 }

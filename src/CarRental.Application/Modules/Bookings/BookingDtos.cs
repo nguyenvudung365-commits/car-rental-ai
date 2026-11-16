@@ -34,13 +34,35 @@ public record BookingFilterRequest(
     int? CarId,
     string? Status,
     DateTime? StartDateFrom,
-    DateTime? StartDateTo,
-    int Page = 1,
-    int PageSize = 10
-);
+    DateTime? StartDateTo
+)
+{
+    [Range(1, int.MaxValue)]
+    public int Page { get; init; } = 1;
+
+    [Range(1, 200)]
+    public int PageSize { get; init; } = 10;
+}
 
 public record ConfirmBookingRequest;
 
 public record CancelBookingRequest(
     string? Reason
+);
+
+public record BookedRangeDto(DateTime StartDate, DateTime EndDate);
+
+public record EstimateBookingRequest(
+    [Required] int CarId,
+    [Required] DateTime StartDate,
+    [Required] DateTime EndDate
+);
+
+public record BookingEstimateDto(
+    int RentalDays,
+    decimal BasePricePerDay,
+    decimal? PredictedPricePerDay,
+    decimal FinalPricePerDay,
+    decimal TotalPrice,
+    bool IsFallback
 );

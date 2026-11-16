@@ -71,10 +71,13 @@ public class BookingRepository : IBookingRepository
 
         var totalCount = await query.CountAsync();
 
+        var page = Math.Max(filter.Page, 1);
+        var pageSize = Math.Clamp(filter.PageSize, 1, 200);
+
         var items = await query
             .OrderByDescending(b => b.CreatedAt)
-            .Skip((filter.Page - 1) * filter.PageSize)
-            .Take(filter.PageSize)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         return (items, totalCount);
@@ -83,7 +86,7 @@ public class BookingRepository : IBookingRepository
     public async Task<bool> HasOverlapAsync(int carId, DateTime startDate, DateTime endDate, int? excludeBookingId = null)
     {
         var query = _context.Bookings
-            .Where(b => b.CarId == carId)
+            .Where(b => b.CarId == carId && !b.IsDeleted)
             .Where(b => b.Status == BookingStatus.ChoXacNhan
                      || b.Status == BookingStatus.DaXacNhan
                      || b.Status == BookingStatus.DangThue)
@@ -95,6 +98,19 @@ public class BookingRepository : IBookingRepository
         }
 
         return await query.AnyAsync();
+    }
+
+    public async Task<List<(DateTime Start, DateTime End)>> GetActiveRangesAsync(int carId, DateTime from)
+    {
+        var rows = await _context.Bookings
+            .Where(b => b.CarId == carId && !b.IsDeleted && b.EndDate > from)
+            .Where(b => b.Status == BookingStatus.ChoXacNhan
+                     || b.Status == BookingStatus.DaXacNhan
+                     || b.Status == BookingStatus.DangThue)
+            .OrderBy(b => b.StartDate)
+            .Select(b => new { b.StartDate, b.EndDate })
+            .ToListAsync();
+        return rows.Select(r => (r.StartDate, r.EndDate)).ToList();
     }
 
     public async Task AddAsync(Booking booking)

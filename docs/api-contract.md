@@ -105,6 +105,20 @@ Rule (Application layer): finalPricePerDay = COALESCE(override, predicted, baseP
 clamp \[400000, 1500000]. Predicted lấy từ /api/ai/quote, fallback = basePricePerDay.
 
 
+\### POST /api/bookings/estimate — Authenticated
+Request: { "CarId": 1, "StartDate": "2026-09-10", "EndDate": "2026-09-13" }
+
+Response: 200 {
+"RentalDays": 3, "BasePricePerDay": 500000, "PredictedPricePerDay": 585000,
+"FinalPricePerDay": 585000, "TotalPrice": 1755000, "IsFallback": false
+}
+
+Lỗi: 400 (StartDate >= EndDate); 404 (không tìm thấy xe).
+
+\### GET /api/bookings/car/{carId}/booked-ranges — Authenticated
+Response: 200 \[ { "StartDate": "2026-09-10T00:00:00", "EndDate": "2026-09-13T00:00:00" } ]
+
+Trả về các khoảng thuê còn hiệu lực của xe (ChoXacNhan, DaXacNhan, DangThue).
 
 \### GET /api/bookings/mine — Customer
 

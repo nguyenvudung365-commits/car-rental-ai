@@ -7,4 +7,6 @@ public interface IBookingService
     Task<BookingDto> GetByIdAsync(int id, int? customerId = null);
     Task<BookingDto> ConfirmAsync(int id);
     Task<BookingDto> CancelAsync(int id, string? reason);
+    Task<BookingEstimateDto> EstimateAsync(EstimateBookingRequest request);
+    Task<List<BookedRangeDto>> GetBookedRangesAsync(int carId);
 }
