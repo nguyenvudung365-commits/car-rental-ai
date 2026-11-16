@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuth from '../auth/AuthContext';
+import {
+  validateFullName,
+  validateEmail,
+  validatePhone,
+  validatePassword,
+  validateConfirmPassword,
+  parseApiError,
+} from '../utils/validators';
 
 /**
  * Trang Đăng ký (RegisterPage)
@@ -17,6 +25,7 @@ const RegisterPage = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   /**
@@ -28,30 +37,15 @@ const RegisterPage = () => {
     setError('');
 
     // Kiểm tra tính hợp lệ của dữ liệu đầu vào
-    if (!fullName.trim()) {
-      setError('Vui lòng nhập họ và tên.');
-      return;
-    }
-    if (!email.trim()) {
-      setError('Vui lòng nhập địa chỉ email.');
-      return;
-    }
-    if (!phone.trim()) {
-      setError('Vui lòng nhập số điện thoại.');
-      return;
-    }
-    if (!password) {
-      setError('Vui lòng nhập mật khẩu.');
-      return;
-    }
-    if (password.length < 8) {
-      setError('Mật khẩu phải có ít nhất 8 ký tự.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp với mật khẩu.');
-      return;
-    }
+    const errors = {
+      fullName: validateFullName(fullName),
+      email: validateEmail(email),
+      phone: validatePhone(phone),
+      password: validatePassword(password),
+      confirmPassword: validateConfirmPassword(password, confirmPassword),
+    };
+    setFieldErrors(errors);
+    if (Object.values(errors).some(Boolean)) return;
 
     try {
       setLoading(true);
@@ -64,13 +58,16 @@ const RegisterPage = () => {
       });
     } catch (err) {
       console.error('Lỗi khi đăng ký tài khoản:', err);
-      // Trích xuất lỗi trả về từ API backend
-      const serverMessage =
-        err.response?.data?.message ||
-        err.response?.data?.title ||
-        (typeof err.response?.data === 'string' ? err.response?.data : null);
-
-      setError(serverMessage || 'Đăng ký không thành công. Vui lòng thử lại với thông tin khác.');
+      const { code, message } = parseApiError(err);
+      if (code === 'EMAIL_EXISTS') {
+        setFieldErrors({ email: 'Email này đã được đăng ký. Hãy dùng email khác hoặc đăng nhập.' });
+      } else if (code === 'PHONE_EXISTS') {
+        setFieldErrors({ phone: 'Số điện thoại này đã được đăng ký.' });
+      } else if (!err.response) {
+        setError('Không kết nối được máy chủ. Vui lòng thử lại sau.');
+      } else {
+        setError(message || 'Đăng ký không thành công. Vui lòng thử lại với thông tin khác.');
+      }
     } finally {
       setLoading(false);
     }
@@ -110,14 +107,16 @@ const RegisterPage = () => {
             <input
               id="fullName"
               type="text"
-              className="form-input"
+              className={`form-input ${fieldErrors.fullName ? 'invalid' : ''}`}
               placeholder="Nguyễn Văn A"
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={(e) => { setFullName(e.target.value); setFieldErrors((f) => ({ ...f, fullName: '' })); }}
+              onBlur={() => setFieldErrors((f) => ({ ...f, fullName: validateFullName(fullName) }))}
               disabled={loading}
               autoComplete="name"
               required
             />
+            {fieldErrors.fullName && <span className="field-error" role="alert">{fieldErrors.fullName}</span>}
           </div>
 
           <div className="form-group">
@@ -127,14 +126,16 @@ const RegisterPage = () => {
             <input
               id="email"
               type="email"
-              className="form-input"
+              className={`form-input ${fieldErrors.email ? 'invalid' : ''}`}
               placeholder="name@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setFieldErrors((f) => ({ ...f, email: '' })); }}
+              onBlur={() => setFieldErrors((f) => ({ ...f, email: validateEmail(email) }))}
               disabled={loading}
               autoComplete="email"
               required
             />
+            {fieldErrors.email && <span className="field-error" role="alert">{fieldErrors.email}</span>}
           </div>
 
           <div className="form-group">
@@ -144,14 +145,16 @@ const RegisterPage = () => {
             <input
               id="phone"
               type="tel"
-              className="form-input"
+              className={`form-input ${fieldErrors.phone ? 'invalid' : ''}`}
               placeholder="0912345678"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => { setPhone(e.target.value); setFieldErrors((f) => ({ ...f, phone: '' })); }}
+              onBlur={() => setFieldErrors((f) => ({ ...f, phone: validatePhone(phone) }))}
               disabled={loading}
               autoComplete="tel"
               required
             />
+            {fieldErrors.phone && <span className="field-error" role="alert">{fieldErrors.phone}</span>}
           </div>
 
           <div className="form-group">
@@ -161,14 +164,16 @@ const RegisterPage = () => {
             <input
               id="password"
               type="password"
-              className="form-input"
+              className={`form-input ${fieldErrors.password ? 'invalid' : ''}`}
               placeholder="Ít nhất 8 ký tự"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setFieldErrors((f) => ({ ...f, password: '' })); }}
+              onBlur={() => setFieldErrors((f) => ({ ...f, password: validatePassword(password) }))}
               disabled={loading}
               autoComplete="new-password"
               required
             />
+            {fieldErrors.password && <span className="field-error" role="alert">{fieldErrors.password}</span>}
           </div>
 
           <div className="form-group">
@@ -178,14 +183,16 @@ const RegisterPage = () => {
             <input
               id="confirmPassword"
               type="password"
-              className="form-input"
+              className={`form-input ${fieldErrors.confirmPassword ? 'invalid' : ''}`}
               placeholder="Nhập lại mật khẩu"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors((f) => ({ ...f, confirmPassword: '' })); }}
+              onBlur={() => setFieldErrors((f) => ({ ...f, confirmPassword: validateConfirmPassword(password, confirmPassword) }))}
               disabled={loading}
               autoComplete="new-password"
               required
             />
+            {fieldErrors.confirmPassword && <span className="field-error" role="alert">{fieldErrors.confirmPassword}</span>}
           </div>
 
           <button

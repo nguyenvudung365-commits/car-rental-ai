@@ -19,7 +19,8 @@ const Navbar = () => {
   const role = user?.role || auth.role;
   const fullName = user?.fullName || auth.fullName || user?.name || user?.email || 'Tài khoản';
   const isAuthenticated = Boolean(auth.isAuthenticated ?? (user || token));
-  const isCustomer = role === 'Customer';
+  const isStaff = role === 'Staff';
+  const isManager = role === 'Admin' || isStaff;
   const isAdmin = role === 'Admin';
 
   // Xử lý đăng xuất người dùng
@@ -70,8 +71,8 @@ const Navbar = () => {
               Danh sách xe
             </Link>
 
-            {/* Menu dành cho Khách hàng đã đăng nhập */}
-            {isAuthenticated && isCustomer && (
+            {/* Lịch sử thuê: mọi tài khoản đã đăng nhập */}
+            {isAuthenticated && (
               <Link
                 to="/my-bookings"
                 className={`navbar-link ${isActive('/my-bookings') ? 'active' : ''}`}
@@ -81,8 +82,8 @@ const Navbar = () => {
               </Link>
             )}
 
-            {/* Menu dành riêng cho Admin */}
-            {isAuthenticated && isAdmin && (
+            {/* Menu quản lý: Admin và Staff */}
+            {isAuthenticated && isManager && (
               <>
                 <Link
                   to="/admin/bookings"
@@ -99,19 +100,28 @@ const Navbar = () => {
                   Trả xe
                 </Link>
                 <Link
+                  to="/admin/cars"
+                  className={`navbar-link ${isActive('/admin/cars') ? 'active' : ''}`}
+                  onClick={closeMenu}
+                >
+                  Quản lý xe
+                </Link>
+                <Link
                   to="/admin/car-images"
                   className={`navbar-link ${isActive('/admin/car-images') ? 'active' : ''}`}
                   onClick={closeMenu}
                 >
                   Ảnh xe
                 </Link>
-                <Link
-                  to="/admin/reports"
-                  className={`navbar-link ${isActive('/admin/reports') ? 'active' : ''}`}
-                  onClick={closeMenu}
-                >
-                  Báo cáo
-                </Link>
+                {isAdmin && (
+                  <Link
+                    to="/admin/reports"
+                    className={`navbar-link ${isActive('/admin/reports') ? 'active' : ''}`}
+                    onClick={closeMenu}
+                  >
+                    Báo cáo
+                  </Link>
+                )}
               </>
             )}
           </div>
@@ -122,7 +132,7 @@ const Navbar = () => {
               <div className="auth-user-info">
                 <span className="user-name">
                   {fullName}
-                  {isAdmin && <span className="admin-badge">Admin</span>}
+                  {isManager && <span className="admin-badge">{isAdmin ? 'Admin' : 'Staff'}</span>}
                 </span>
                 <button
                   type="button"

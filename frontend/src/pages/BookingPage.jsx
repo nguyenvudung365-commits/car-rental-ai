@@ -3,6 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { formatCurrency } from '../utils/formatCurrency';
 import { carTypeLabel } from '../utils/carLabels';
+import { parseApiError } from '../utils/validators';
+
+const NOTE_MAX = 500;
+const todayStr = () => new Date().toISOString().split('T')[0];
 
 export default function BookingPage() {
   const { carId } = useParams();
@@ -15,8 +19,12 @@ export default function BookingPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(true);
   const [bookingResult, setBookingResult] = useState(null);
+  const [bookedRanges, setBookedRanges] = useState([]);
+  const [estimate, setEstimate] = useState(null);
+  const [estimating, setEstimating] = useState(false);
 
   // Load thông tin xe
   useEffect(() => {
@@ -25,6 +33,33 @@ export default function BookingPage() {
       .catch(() => setError('Không thể tải thông tin xe'))
       .finally(() => setLoading(false));
   }, [carId]);
+
+  // Các khoảng ngày xe đã có người đặt
+  useEffect(() => {
+    axiosClient.get(`/bookings/car/${carId}/booked-ranges`)
+      .then(res => setBookedRanges(res.data || []))
+      .catch(() => setBookedRanges([]));
+  }, [carId]);
+
+  const toDay = (d) => String(d).slice(0, 10);
+  const overlapRange = startDate && endDate
+    ? bookedRanges.find(r => toDay(r.StartDate) < endDate && toDay(r.EndDate) > startDate)
+    : null;
+
+  // Báo giá AI khi đã chọn khoảng ngày hợp lệ và không trùng lịch
+  useEffect(() => {
+    setEstimate(null);
+    if (!startDate || !endDate || endDate <= startDate || startDate < todayStr() || overlapRange) return undefined;
+    let cancelled = false;
+    setEstimating(true);
+    const timer = setTimeout(() => {
+      axiosClient.post('/bookings/estimate', { carId: Number(carId), startDate, endDate })
+        .then(res => { if (!cancelled) setEstimate(res.data); })
+        .catch(() => { if (!cancelled) setEstimate(null); })
+        .finally(() => { if (!cancelled) setEstimating(false); });
+    }, 400);
+    return () => { cancelled = true; clearTimeout(timer); setEstimating(false); };
+  }, [carId, startDate, endDate, overlapRange]);
 
   // Tính số ngày thuê
   const totalDays = startDate && endDate
@@ -35,14 +70,17 @@ export default function BookingPage() {
   // Xác nhận đặt xe
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!startDate || !endDate) {
-      setError('Vui lòng chọn ngày nhận và trả xe');
-      return;
+    const errors = {};
+    if (!startDate) errors.startDate = 'Vui lòng chọn ngày nhận xe.';
+    else if (startDate < todayStr()) errors.startDate = 'Ngày nhận xe không được ở quá khứ.';
+    if (!endDate) errors.endDate = 'Vui lòng chọn ngày trả xe.';
+    else if (startDate && endDate <= startDate) errors.endDate = 'Ngày trả xe phải sau ngày nhận xe.';
+    if (!errors.startDate && !errors.endDate && overlapRange) {
+      errors.startDate = 'Xe đã có người đặt trong khoảng thời gian này. Hãy chọn ngày khác.';
     }
-    if (new Date(endDate) <= new Date(startDate)) {
-      setError('Ngày trả phải sau ngày nhận');
-      return;
-    }
+    if (note.length > NOTE_MAX) errors.note = `Ghi chú tối đa ${NOTE_MAX} ký tự.`;
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
 
     setSubmitting(true);
     setError('');
@@ -56,7 +94,16 @@ export default function BookingPage() {
       });
       setBookingResult(response.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Đặt xe thất bại, vui lòng thử lại');
+      const { code, message } = parseApiError(err);
+      if (code === 'BOOKING_OVERLAP') {
+        setFieldErrors({ startDate: 'Xe đã có người đặt trong khoảng thời gian này. Hãy chọn ngày khác.' });
+      } else if (code === 'CAR_NOT_AVAILABLE') {
+        setError('Xe hiện không sẵn sàng cho thuê. Vui lòng chọn xe khác.');
+      } else if (err.response?.status === 401) {
+        setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      } else {
+        setError(message || 'Đặt xe thất bại, vui lòng thử lại');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -125,18 +172,29 @@ export default function BookingPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 500 }}>
           <div className="form-group">
             <label className="form-label">Ngày nhận xe</label>
-            <input type="date" className="form-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} min={new Date().toISOString().split('T')[0]} required />
+            <input type="date" className={`form-input ${fieldErrors.startDate ? 'invalid' : ''}`} value={startDate} onBlur={() => setFieldErrors((f) => ({ ...f, startDate: !startDate ? 'Vui lòng chọn ngày nhận xe.' : startDate < todayStr() ? 'Ngày nhận xe không được ở quá khứ.' : '' }))} onChange={(e) => { setStartDate(e.target.value); setFieldErrors((f) => ({ ...f, startDate: '', endDate: '' })); }} min={todayStr()} required />
+            {fieldErrors.startDate && <span className="field-error" role="alert">{fieldErrors.startDate}</span>}
           </div>
           <div className="form-group">
             <label className="form-label">Ngày trả xe</label>
-            <input type="date" className="form-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} min={startDate || new Date().toISOString().split('T')[0]} required />
+            <input type="date" className={`form-input ${fieldErrors.endDate ? 'invalid' : ''}`} value={endDate} onBlur={() => setFieldErrors((f) => ({ ...f, endDate: !endDate ? 'Vui lòng chọn ngày trả xe.' : startDate && endDate <= startDate ? 'Ngày trả xe phải sau ngày nhận xe.' : '' }))} onChange={(e) => { setEndDate(e.target.value); setFieldErrors((f) => ({ ...f, startDate: '', endDate: '' })); }} min={startDate || todayStr()} required />
+            {overlapRange && !fieldErrors.startDate && <span className="field-error" role="alert">Khoảng ngày này trùng lịch đã có người đặt.</span>}
+            {fieldErrors.endDate && <span className="field-error" role="alert">{fieldErrors.endDate}</span>}
           </div>
         </div>
 
         <div className="form-group" style={{ marginTop: 12, maxWidth: 500 }}>
           <label className="form-label">Ghi chú</label>
-          <textarea className="form-input" value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Yêu cầu thêm..." />
+          <textarea className={`form-input ${fieldErrors.note ? 'invalid' : ''}`} value={note} onChange={(e) => { setNote(e.target.value); setFieldErrors((f) => ({ ...f, note: '' })); }} rows={3} placeholder="Yêu cầu thêm..." />
+          <span style={{ fontSize: 12, color: '#6b7280', alignSelf: 'flex-end' }}>{note.length}/{NOTE_MAX}</span>
+          {fieldErrors.note && <span className="field-error" role="alert">{fieldErrors.note}</span>}
         </div>
+
+        {bookedRanges.length > 0 && (
+          <div style={{ marginTop: 8, maxWidth: 500, fontSize: 13, color: '#92400e', background: '#fef3c7', padding: '8px 12px', borderRadius: 6 }}>
+            Xe đã được đặt trong: {bookedRanges.map(r => `${toDay(r.StartDate)} → ${toDay(r.EndDate)}`).join('; ')}
+          </div>
+        )}
 
         {totalDays > 0 && (
           <div className="price-compare" style={{ marginTop: 16, maxWidth: 500, background: '#f9fafb', padding: 16, borderRadius: 8 }}>
@@ -145,13 +203,26 @@ export default function BookingPage() {
               <span>Giá niêm yết:</span>
               <span>{formatCurrency(basePrice)}</span>
             </div>
-            <p style={{ fontSize: 12, color: '#6b7280', marginTop: 8 }}>Giá AI sẽ được tính khi bạn xác nhận đặt xe.</p>
+            {estimating && <p style={{ fontSize: 13, color: '#6b7280', marginTop: 8 }}>Đang tính giá AI...</p>}
+            {estimate && (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+                  <span>{estimate.IsFallback ? 'Giá áp dụng/ngày (AI không khả dụng):' : 'Giá AI gợi ý/ngày:'}</span>
+                  <span style={{ color: '#16a34a', fontWeight: 600 }}>{formatCurrency(estimate.FinalPricePerDay)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontWeight: 700 }}>
+                  <span>Tổng dự kiến:</span>
+                  <span>{formatCurrency(estimate.TotalPrice)}</span>
+                </div>
+              </>
+            )}
+            <p style={{ fontSize: 12, color: '#6b7280', marginTop: 8 }}>Giá cuối cùng được chốt khi bạn xác nhận đặt xe.</p>
           </div>
         )}
 
-        {error && <p className="form-error" style={{ marginTop: 12 }}>{error}</p>}
+        {error && <p className="form-error" role="alert" style={{ marginTop: 12 }}>{error}</p>}
 
-        <button type="submit" className="btn btn-primary" style={{ marginTop: 20, width: '100%', maxWidth: 500 }} disabled={submitting || !startDate || !endDate}>
+        <button type="submit" className="btn btn-primary" style={{ marginTop: 20, width: '100%', maxWidth: 500 }} disabled={submitting || !startDate || !endDate || !!overlapRange}>
           {submitting ? 'Đang xử lý...' : 'Xác nhận đặt xe'}
         </button>
       </form>

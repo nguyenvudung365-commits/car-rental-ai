@@ -1419,3 +1419,18 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Lỗi hiển thị ngay dưới ô nhập */
+.form-input.invalid {
+  border-color: var(--danger-color);
+}
+
+.form-input.invalid:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.field-error {
+  font-size: 0.8rem;
+  color: var(--danger-color);
+  margin-top: 2px;
+}
