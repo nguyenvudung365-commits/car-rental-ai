@@ -48,54 +48,90 @@ public class BookingService : IBookingService
             throw new ConflictException("CAR_NOT_AVAILABLE", "Xe không sẵn sàng cho thuê");
         }
 
-        var hasOverlap = await _bookingRepository.HasOverlapAsync(
-            request.CarId,
-            request.StartDate,
-            request.EndDate);
-
-        if (hasOverlap)
-        {
-            throw new ConflictException("BOOKING_OVERLAP", "Xe đã có lịch thuê trong khoảng thời gian này");
-        }
-
         var correlationId = Guid.NewGuid().ToString();
         var rentalDays = (request.EndDate - request.StartDate).Days;
 
-        var aiRequest = new PredictPriceRequest(
-            car.CarType.ToString(),
+        // Gọi AI ngoài transaction để không giữ khóa DB trong lúc chờ timeout/retry.
+        var (aiResponse, finalPrice) = await QuoteAsync(car, request.StartDate, rentalDays, correlationId);
+
+        // Khóa dòng xe rồi kiểm tra trùng lịch và ghi booking trong cùng một transaction:
+        // hai request đồng thời cùng xe phải xếp hàng nên không thể cùng vượt qua bước kiểm tra.
+        var bookingId = await _unitOfWork.ExecuteInTransactionAsync(async () =>
+        {
+            await _carRepository.LockForBookingAsync(request.CarId);
+
+            var hasOverlap = await _bookingRepository.HasOverlapAsync(
+                request.CarId,
+                request.StartDate,
+                request.EndDate);
+
+            if (hasOverlap)
+            {
+                throw new ConflictException("BOOKING_OVERLAP", "Xe đã có lịch thuê trong khoảng thời gian này");
+            }
+
+            var booking = new Booking
+            {
+                CustomerId = customerId,
+                CarId = request.CarId,
+                StartDate = request.StartDate,
+                EndDate = request.EndDate,
+                PredictedPricePerDay = aiResponse.PredictedPrice,
+                FinalPricePerDay = finalPrice,
+                TotalPrice = finalPrice * rentalDays,
+                IsFallback = aiResponse.IsFallback,
+                Status = BookingStatus.ChoXacNhan,
+                CorrelationId = correlationId,
+                Note = request.Note,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _bookingRepository.AddAsync(booking);
+            await _unitOfWork.SaveChangesAsync();
+
+            return booking.Id;
+        });
+
+        return await GetByIdAsync(bookingId);
+    }
+
+    private async Task<(PredictPriceResult Ai, decimal FinalPricePerDay)> QuoteAsync(Car car, DateTime start, int rentalDays, string? correlationId = null)
+    {
+        var aiResponse = await _aiPricingClient.PredictPriceAsync(new PredictPriceRequest(
+            (int)car.CarType,
             car.CarAgeYears,
             car.Seats,
             rentalDays,
             car.BasePricePerDay,
-            request.StartDate);
-
-        var aiResponse = await _aiPricingClient.PredictPriceAsync(aiRequest);
+            start,
+            correlationId));
 
         var finalPrice = PricingCalculator.ResolveFinalPricePerDay(
             car.OverridePrice,
             aiResponse.PredictedPrice,
             car.BasePricePerDay);
 
-        var booking = new Booking
-        {
-            CustomerId = customerId,
-            CarId = request.CarId,
-            StartDate = request.StartDate,
-            EndDate = request.EndDate,
-            PredictedPricePerDay = aiResponse.PredictedPrice,
-            FinalPricePerDay = finalPrice,
-            TotalPrice = finalPrice * rentalDays,
-            IsFallback = aiResponse.IsFallback,
-            Status = BookingStatus.ChoXacNhan,
-            CorrelationId = correlationId,
-            Note = request.Note,
-            CreatedAt = DateTime.UtcNow
-        };
+        return (aiResponse, finalPrice);
+    }
 
-        await _bookingRepository.AddAsync(booking);
-        await _unitOfWork.SaveChangesAsync();
+    public async Task<BookingEstimateDto> EstimateAsync(EstimateBookingRequest request)
+    {
+        if (request.StartDate >= request.EndDate)
+            throw new BadRequestException("StartDate phải trước EndDate");
 
-        return await GetByIdAsync(booking.Id);
+        var car = await _carRepository.GetByIdAsync(request.CarId)
+            ?? throw new NotFoundException("Car", request.CarId);
+
+        var rentalDays = (request.EndDate - request.StartDate).Days;
+        var (ai, finalPrice) = await QuoteAsync(car, request.StartDate, rentalDays);
+        return new BookingEstimateDto(
+            rentalDays, car.BasePricePerDay, ai.PredictedPrice, finalPrice, finalPrice * rentalDays, ai.IsFallback);
+    }
+
+    public async Task<List<BookedRangeDto>> GetBookedRangesAsync(int carId)
+    {
+        var ranges = await _bookingRepository.GetActiveRangesAsync(carId, DateTime.UtcNow.Date);
+        return ranges.Select(r => new BookedRangeDto(r.Start, r.End)).ToList();
     }
 
     public async Task<(List<BookingDto> Items, int TotalCount)> GetFilteredAsync(
@@ -151,9 +187,9 @@ public class BookingService : IBookingService
             throw new NotFoundException("Booking", id);
         }
 
-        if (booking.Status == BookingStatus.DaHuy || booking.Status == BookingStatus.DaTraXe)
+        if (booking.Status is BookingStatus.DaHuy or BookingStatus.DaTraXe or BookingStatus.DangThue)
         {
-            throw new ConflictException("INVALID_STATUS", "Không thể hủy booking đã hủy hoặc hoàn thành");
+            throw new ConflictException("INVALID_STATUS", "Không thể hủy booking đã hủy, đang thuê hoặc hoàn thành");
         }
 
         booking.Status = BookingStatus.DaHuy;

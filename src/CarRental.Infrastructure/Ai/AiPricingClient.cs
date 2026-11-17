@@ -50,31 +50,29 @@ public sealed class AiPricingClient : IAiPricingClient
                     Content = JsonContent.Create(payload)
                 };
 
-                var correlationId = _httpContextAccessor.HttpContext?.Request.Headers["X-Correlation-Id"].ToString();
+                var correlationId = !string.IsNullOrEmpty(request.CorrelationId)
+                    ? request.CorrelationId
+                    : _httpContextAccessor.HttpContext?.Request.Headers["X-Correlation-Id"].ToString();
                 if (!string.IsNullOrEmpty(correlationId))
                     httpRequest.Headers.Add("X-Correlation-Id", correlationId);
 
-                var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+                using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
 
                 if (!response.IsSuccessStatusCode)
                 {
                     _logger.LogWarning("AI pricing returned {Status} attempt {Attempt}", response.StatusCode, attempt + 1);
-                    continue;
                 }
-
-                var json = await response.Content.ReadAsStringAsync(cancellationToken);
-                using var doc = JsonDocument.Parse(json);
-                if (doc.RootElement.TryGetProperty("predicted_price", out var priceEl) && priceEl.TryGetDecimal(out var predicted))
+                else
                 {
-                    return new PredictPriceResult(predicted, IsFallback: false);
-                }
+                    var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                    using var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("predicted_price_per_day", out var priceEl) && priceEl.TryGetDecimal(out var predicted))
+                    {
+                        return new PredictPriceResult(predicted, IsFallback: false);
+                    }
 
-                if (doc.RootElement.TryGetProperty("predictedPrice", out var priceEl2) && priceEl2.TryGetDecimal(out var predicted2))
-                {
-                    return new PredictPriceResult(predicted2, IsFallback: false);
+                    _logger.LogWarning("AI pricing response missing predicted_price_per_day field");
                 }
-
-                _logger.LogWarning("AI pricing response missing predicted_price field");
             }
             catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
             {

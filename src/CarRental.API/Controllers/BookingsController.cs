@@ -35,6 +35,14 @@ public class BookingsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
     }
 
+    [HttpPost("estimate")]
+    public async Task<ActionResult<BookingEstimateDto>> Estimate(EstimateBookingRequest request)
+        => Ok(await _bookingService.EstimateAsync(request));
+
+    [HttpGet("car/{carId:int}/booked-ranges")]
+    public async Task<ActionResult<List<BookedRangeDto>>> BookedRanges(int carId)
+        => Ok(await _bookingService.GetBookedRangesAsync(carId));
+
     [HttpGet]
     public async Task<IActionResult> GetFiltered([FromQuery] BookingFilterRequest filter)
     {

@@ -12,5 +12,6 @@ public interface ICarService
     Task DeleteAsync(int id);
     Task<CarImageDto> AddImageAsync(int carId, IFormFile file);
     Task SetPrimaryImageAsync(int carId, int imageId);
+    Task DeleteImageAsync(int carId, int imageId);
 }
 

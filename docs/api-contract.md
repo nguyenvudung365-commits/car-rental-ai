@@ -105,6 +105,20 @@ Rule (Application layer): finalPricePerDay = COALESCE(override, predicted, baseP
 clamp \[400000, 1500000]. Predicted lấy từ /api/ai/quote, fallback = basePricePerDay.
 
 
+\### POST /api/bookings/estimate — Authenticated
+Request: { "CarId": 1, "StartDate": "2026-09-10", "EndDate": "2026-09-13" }
+
+Response: 200 {
+"RentalDays": 3, "BasePricePerDay": 500000, "PredictedPricePerDay": 585000,
+"FinalPricePerDay": 585000, "TotalPrice": 1755000, "IsFallback": false
+}
+
+Lỗi: 400 (StartDate >= EndDate); 404 (không tìm thấy xe).
+
+\### GET /api/bookings/car/{carId}/booked-ranges — Authenticated
+Response: 200 \[ { "StartDate": "2026-09-10T00:00:00", "EndDate": "2026-09-13T00:00:00" } ]
+
+Trả về các khoảng thuê còn hiệu lực của xe (ChoXacNhan, DaXacNhan, DangThue).
 
 \### GET /api/bookings/mine — Customer
 
@@ -113,6 +127,9 @@ Response: 200 \[ { bookingId, carLicensePlate, startDate, endDate, status, final
 \### GET /api/bookings — Staff/Admin (filter status, page)
 
 \### PUT /api/bookings/{id}/confirm — Staff/Admin: Pending→Confirmed. Lỗi 409 nếu lệch trạng thái/overlap
+
+\### POST /api/bookings/{bookingId}/pickup — Staff/Admin → 200
+Transition: DaXacNhan → DangThue; Car status → DangThue.
 
 \### PUT /api/bookings/{id}/cancel  — Customer (chỉ khi Pending|Confirmed) / Staff (mọi trạng thái chưa Completed)
 
@@ -128,7 +145,7 @@ Request:  { "amount": 500000, "method": "cash|transfer|momo" }
 
 Response: 201 { "paymentId": 3, "status": "Pending", ... }
 
-\### PUT /api/payments/{id}/mark-paid — Staff → 200 (status Paid, set paidAt)
+\### POST /api/payments/{paymentId}/mark-paid — Staff/Admin → 200 (status Paid, set paidAt)
 
 \### GET /api/bookings/{bookingId}/payments — Customer/Staff → 200 \[...]
 

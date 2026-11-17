@@ -10,4 +10,6 @@ public interface ICarRepository
     Task AddAsync(CarEntity car);
     void Update(CarEntity car);
     void Delete(CarEntity car);
+    /// <summary>Khóa dòng xe trong transaction hiện tại để các request đặt cùng xe phải xếp hàng.</summary>
+    Task LockForBookingAsync(int carId);
 }

@@ -16,6 +16,7 @@ import MyBookingsPage from './pages/MyBookingsPage';
 // Các trang Quản trị viên (Admin)
 import AdminBookingsPage from './pages/admin/AdminBookingsPage';
 import AdminReturnPage from './pages/admin/AdminReturnPage';
+import AdminCarsPage from './pages/admin/AdminCarsPage';
 import AdminCarImagesPage from './pages/admin/AdminCarImagesPage';
 import AdminReportsPage from './pages/admin/AdminReportsPage';
 
@@ -37,16 +38,19 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
 
             {/* Customer Routes - Yêu cầu đăng nhập tài khoản Customer hoặc Admin */}
-            <Route element={<PrivateRoute roles={['Customer', 'Admin']} />}>
+            <Route element={<PrivateRoute roles={['Customer', 'Staff', 'Admin']} />}>
               <Route path="/booking/:carId" element={<BookingPage />} />
               <Route path="/my-bookings" element={<MyBookingsPage />} />
             </Route>
 
             {/* Admin Routes - Chỉ dành riêng cho quyền quản trị viên Admin */}
-            <Route element={<PrivateRoute roles={['Admin']} />}>
+            <Route element={<PrivateRoute roles={['Staff', 'Admin']} />}>
               <Route path="/admin/bookings" element={<AdminBookingsPage />} />
               <Route path="/admin/returns" element={<AdminReturnPage />} />
+              <Route path="/admin/cars" element={<AdminCarsPage />} />
               <Route path="/admin/car-images" element={<AdminCarImagesPage />} />
+            </Route>
+            <Route element={<PrivateRoute roles={['Admin']} />}>
               <Route path="/admin/reports" element={<AdminReportsPage />} />
             </Route>
 

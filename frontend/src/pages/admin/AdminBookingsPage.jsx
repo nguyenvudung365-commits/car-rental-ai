@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { formatCurrency } from '../../utils/formatCurrency';
+import PaymentsModal from '../../components/PaymentsModal';
 
 /**
  * Trang Quản lý Đơn thuê (AdminBookingsPage)
@@ -12,6 +13,7 @@ import { formatCurrency } from '../../utils/formatCurrency';
  */
 const AdminBookingsPage = () => {
   const [bookings, setBookings] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState(null);
@@ -21,6 +23,7 @@ const AdminBookingsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Trạng thái Modal Hủy đơn
+  const [paymentBooking, setPaymentBooking] = useState(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelBooking, setCancelBooking] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -37,12 +40,13 @@ const AdminBookingsPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axiosClient.get('/bookings');
+      const response = await axiosClient.get('/bookings', { params: { pageSize: 200 } });
       // Xử lý dữ liệu trả về linh hoạt: mảng trực tiếp hoặc { items: [] } hoặc { data: [] }
       const data = Array.isArray(response.data)
         ? response.data
         : (response.data?.items || response.data?.data || []);
       setBookings(data);
+      setTotalCount(Number(response.data?.total) || data.length);
     } catch (err) {
       console.error('Lỗi khi tải danh sách đơn thuê:', err);
       setError(err.response?.data?.message || 'Không thể tải danh sách đơn đặt xe. Vui lòng thử lại!');
@@ -87,6 +91,47 @@ const AdminBookingsPage = () => {
       });
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  /**
+   * Giao xe cho khách: DaXacNhan -> DangThue
+   * API Endpoint: POST /bookings/:id/pickup
+   */
+  const handlePickup = async (booking) => {
+    if (!window.confirm(`Xác nhận giao xe cho đơn #${booking.Id}?`)) return;
+    try {
+      setActionLoading(true);
+      await axiosClient.post(`/bookings/${booking.Id}/pickup`);
+      setNotification({ type: 'success', message: `Đã giao xe cho đơn #${booking.Id}.` });
+      await fetchBookings();
+    } catch (err) {
+      setNotification({
+        type: 'error',
+        message: err.response?.data?.message || `Không thể giao xe cho đơn #${booking.Id}.`,
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  /**
+   * Tải hợp đồng PDF (cần JWT nên tải qua axios dạng blob)
+   * API Endpoint: GET /bookings/:id/contract
+   */
+  const handleDownloadContract = async (booking) => {
+    try {
+      const response = await axiosClient.get(`/bookings/${booking.Id}/contract`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `hop-dong-${booking.Id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setNotification({ type: 'error', message: `Không thể tải hợp đồng đơn #${booking.Id}.` });
     }
   };
 
@@ -343,6 +388,11 @@ const AdminBookingsPage = () => {
           overflow: 'hidden',
         }}
       >
+        {totalCount > bookings.length && (
+          <div style={{ padding: '10px 16px', color: '#6b7280', fontSize: '14px', borderBottom: '1px solid #e5e7eb' }}>
+            Đang hiển thị {bookings.length}/{totalCount} đơn
+          </div>
+        )}
         {loading && bookings.length === 0 ? (
           <div style={{ padding: '60px 20px', textAlign: 'center', color: '#6b7280' }}>
             <div
@@ -426,6 +476,7 @@ const AdminBookingsPage = () => {
               <tbody style={{ fontSize: '0.875rem', color: '#1f2937' }}>
                 {filteredBookings.map((b) => {
                   const isPending = b.Status === 'ChoXacNhan';
+                  const canCancel = b.Status === 'ChoXacNhan' || b.Status === 'DaXacNhan';
                   const carTitle = b.CarName || `Xe #${b.CarId}`;
 
                   return (
@@ -502,8 +553,42 @@ const AdminBookingsPage = () => {
                             </button>
                           )}
 
-                          {/* Nút Hủy - chỉ hiển thị khi Chờ xác nhận */}
-                          {isPending && (
+                          {b.Status === 'DaXacNhan' && (
+                            <button
+                              type="button"
+                              onClick={() => handlePickup(b)}
+                              disabled={actionLoading}
+                              title="Giao xe cho khách"
+                              style={{ padding: '6px 10px', backgroundColor: '#2563eb', color: '#ffffff', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer' }}
+                            >
+                              Giao xe
+                            </button>
+                          )}
+
+                          {b.Status !== 'ChoXacNhan' && b.Status !== 'DaHuy' && (
+                            <button
+                              type="button"
+                              onClick={() => setPaymentBooking(b)}
+                              title="Thanh toán"
+                              style={{ padding: '6px 10px', backgroundColor: '#6b7280', color: '#ffffff', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer' }}
+                            >
+                              Thanh toán
+                            </button>
+                          )}
+
+                          {b.Status !== 'ChoXacNhan' && b.Status !== 'DaHuy' && (
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadContract(b)}
+                              title="Tải hợp đồng PDF"
+                              style={{ padding: '6px 10px', backgroundColor: '#0d9488', color: '#ffffff', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer' }}
+                            >
+                              Hợp đồng
+                            </button>
+                          )}
+
+                          {/* Nút Hủy - khi Chờ xác nhận hoặc Đã xác nhận (DangThue bị chặn) */}
+                          {canCancel && (
                             <button
                               type="button"
                               onClick={() => openCancelModal(b)}
@@ -524,7 +609,7 @@ const AdminBookingsPage = () => {
                           )}
 
                           {/* Khi không còn thao tác nào khả dụng */}
-                          {!isPending && (
+                          {b.Status === 'DaHuy' && (
                             <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>—</span>
                           )}
                         </div>
@@ -683,6 +768,10 @@ const AdminBookingsPage = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {paymentBooking && (
+        <PaymentsModal booking={paymentBooking} canMarkPaid onClose={() => setPaymentBooking(null)} />
       )}
     </div>
   );

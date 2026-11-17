@@ -1,12 +1,13 @@
 namespace CarRental.Application.Common;
 
 public sealed record PredictPriceRequest(
-    string CarType,
+    int CarType,
     int CarAgeYears,
     int Seats,
     int RentalDays,
     decimal BasePricePerDay,
-    DateTime StartDate);
+    DateTime StartDate,
+    string? CorrelationId = null);
 
 public sealed record PredictPriceResult(decimal PredictedPrice, bool IsFallback);
 

@@ -15,10 +15,10 @@ export const AuthProvider = ({ children }) => {
       const storedToken = localStorage.getItem('token');
       const storedUser = localStorage.getItem('user');
 
-      if (storedToken) {
+      if (storedToken && storedToken !== 'undefined') {
         setToken(storedToken);
       }
-      if (storedUser) {
+      if (storedUser && storedUser !== '{}') {
         setUser(JSON.parse(storedUser));
       }
     } catch (error) {
@@ -38,7 +38,12 @@ export const AuthProvider = ({ children }) => {
    */
   const login = async (email, password) => {
     const response = await axiosClient.post('/auth/login', { email, password });
-    const { token: receivedToken, role, fullName } = response.data;
+    // API trả PascalCase (Token/Role/FullName); vẫn chấp nhận camelCase
+    const data = response.data || {};
+    const receivedToken = data.Token ?? data.token;
+    const role = data.Role ?? data.role;
+    const fullName = data.FullName ?? data.fullName;
+    if (!receivedToken) throw new Error('Phản hồi đăng nhập không có token');
 
     const userData = { fullName, role };
 

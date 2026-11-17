@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import useAuth from '../auth/AuthContext';
+import { validateEmail, parseApiError } from '../utils/validators';
 
 /**
  * Trang Đăng nhập (LoginPage)
@@ -16,6 +17,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   // Nhận thông báo chuyển tiếp từ trang khác (ví dụ: đăng ký thành công)
@@ -31,14 +33,12 @@ const LoginPage = () => {
     setError('');
 
     // Kiểm tra tính hợp lệ cơ bản
-    if (!email.trim()) {
-      setError('Vui lòng nhập địa chỉ email.');
-      return;
-    }
-    if (!password) {
-      setError('Vui lòng nhập mật khẩu.');
-      return;
-    }
+    const errors = {
+      email: validateEmail(email),
+      password: password ? '' : 'Vui lòng nhập mật khẩu.',
+    };
+    setFieldErrors(errors);
+    if (errors.email || errors.password) return;
 
     try {
       setLoading(true);
@@ -48,13 +48,15 @@ const LoginPage = () => {
       navigate(redirectPath, { replace: true });
     } catch (err) {
       console.error('Lỗi đăng nhập:', err);
-      // Trích xuất thông báo lỗi trả về từ máy chủ hoặc lỗi mặc định
-      const serverMessage =
-        err.response?.data?.message ||
-        err.response?.data?.title ||
-        (typeof err.response?.data === 'string' ? err.response?.data : null);
-
-      setError(serverMessage || 'Đăng nhập không thành công. Vui lòng kiểm tra lại email hoặc mật khẩu.');
+      const { status, message } = parseApiError(err);
+      if (status === 401) {
+        // Sai email hoặc mật khẩu: báo ngay dưới ô mật khẩu
+        setFieldErrors({ password: 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.' });
+      } else if (!err.response) {
+        setError('Không kết nối được máy chủ. Vui lòng thử lại sau.');
+      } else {
+        setError(message || 'Đăng nhập không thành công. Vui lòng thử lại.');
+      }
     } finally {
       setLoading(false);
     }
@@ -111,14 +113,16 @@ const LoginPage = () => {
             <input
               id="email"
               type="email"
-              className="form-input"
+              className={`form-input ${fieldErrors.email ? 'invalid' : ''}`}
               placeholder="name@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setFieldErrors((f) => ({ ...f, email: '' })); }}
+              onBlur={() => setFieldErrors((f) => ({ ...f, email: validateEmail(email) }))}
               disabled={loading}
               autoComplete="email"
               required
             />
+            {fieldErrors.email && <span className="field-error" role="alert">{fieldErrors.email}</span>}
           </div>
 
           <div className="form-group">
@@ -128,14 +132,16 @@ const LoginPage = () => {
             <input
               id="password"
               type="password"
-              className="form-input"
+              className={`form-input ${fieldErrors.password ? 'invalid' : ''}`}
               placeholder="••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setFieldErrors((f) => ({ ...f, password: '' })); }}
+              onBlur={() => setFieldErrors((f) => ({ ...f, password: password ? '' : 'Vui lòng nhập mật khẩu.' }))}
               disabled={loading}
               autoComplete="current-password"
               required
             />
+            {fieldErrors.password && <span className="field-error" role="alert">{fieldErrors.password}</span>}
           </div>
 
           <button
