@@ -30,3 +30,15 @@ export const carStatusLabel = (value) => {
   const key = normalizeCarStatus(value);
   return CAR_STATUS_LABEL[key] ?? (key || 'Chưa rõ');
 };
+
+// Hộp số / nhiên liệu: API trả enum dạng số (1,2,...); form admin dùng khóa chuỗi.
+export const TRANSMISSIONS = { SoSan: 1, SoTuDong: 2 };
+export const FUEL_TYPES = { Xang: 1, Dau: 2, Dien: 3, Hybrid: 4 };
+const TRANSMISSION_LABEL = { SoSan: 'Số sàn', SoTuDong: 'Số tự động' };
+const FUEL_LABEL = { Xang: 'Xăng', Dau: 'Dầu diesel', Dien: 'Điện', Hybrid: 'Hybrid' };
+const keyOf = (map, value) => Object.keys(map).find((k) => map[k] === value || k === value) ?? '';
+
+export const normalizeTransmission = (value) => keyOf(TRANSMISSIONS, value);
+export const normalizeFuelType = (value) => keyOf(FUEL_TYPES, value);
+export const transmissionLabel = (value) => TRANSMISSION_LABEL[normalizeTransmission(value)] ?? '—';
+export const fuelLabel = (value) => FUEL_LABEL[normalizeFuelType(value)] ?? '—';

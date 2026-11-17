@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axiosClient from '../../api/axiosClient';
-import { carTypeLabel, carStatusLabel, normalizeCarType, normalizeCarStatus } from '../../utils/carLabels';
+import { carTypeLabel, carStatusLabel, normalizeCarType, normalizeCarStatus, normalizeTransmission, normalizeFuelType, TRANSMISSIONS, FUEL_TYPES, transmissionLabel, fuelLabel } from '../../utils/carLabels';
+import CarImagesManager from '../../components/CarImagesManager';
 
 /**
  * Trang Quản lý xe cho Admin/Staff (CRAI-36)
@@ -22,6 +23,9 @@ const EMPTY_FORM = {
   basePricePerDay: '',
   status: 'SanSang',
   description: '',
+  transmission: '',
+  fuelType: '',
+  manufactureYear: '',
 };
 
 const card = { backgroundColor: '#fff', borderRadius: '10px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' };
@@ -89,6 +93,9 @@ const AdminCarsPage = () => {
       basePricePerDay: car.BasePricePerDay ?? car.basePricePerDay ?? '',
       status: normalizeCarStatus(car.Status ?? car.status) || 'SanSang',
       description: car.Description ?? car.description ?? '',
+      transmission: normalizeTransmission(car.Transmission ?? car.transmission),
+      fuelType: normalizeFuelType(car.FuelType ?? car.fuelType),
+      manufactureYear: car.ManufactureYear ?? car.manufactureYear ?? '',
     });
     setShowForm(true);
     setError(null);
@@ -121,6 +128,8 @@ const AdminCarsPage = () => {
     if (!Number.isInteger(Number(form.seats)) || Number(form.seats) < 1 || Number(form.seats) > 16) e.seats = 'Số chỗ phải từ 1 đến 16.';
     if (!Number.isInteger(Number(form.carAgeYears)) || Number(form.carAgeYears) < 0 || Number(form.carAgeYears) > 50) e.carAgeYears = 'Tuổi xe phải từ 0 đến 50.';
     if (!(Number(form.basePricePerDay) >= 1)) e.basePricePerDay = 'Giá thuê gốc mỗi ngày phải lớn hơn 0.';
+    const y = Number(form.manufactureYear);
+    if (form.manufactureYear !== '' && (!Number.isInteger(y) || y < 1990 || y > new Date().getFullYear() + 1)) e.manufactureYear = 'Năm sản xuất không hợp lệ.';
     return e;
   };
 
@@ -143,6 +152,9 @@ const AdminCarsPage = () => {
       CarAgeYears: Number(form.carAgeYears),
       BasePricePerDay: Number(form.basePricePerDay),
       Description: form.description.trim() || null,
+      Transmission: TRANSMISSIONS[form.transmission] ?? null,
+      FuelType: FUEL_TYPES[form.fuelType] ?? null,
+      ManufactureYear: form.manufactureYear === '' ? null : Number(form.manufactureYear),
     };
 
     try {
@@ -241,6 +253,22 @@ const AdminCarsPage = () => {
               <input style={inputStyle('basePricePerDay')} type="number" min="1" value={form.basePricePerDay} onChange={setField('basePricePerDay')} onBlur={blurField('basePricePerDay')} required />
               {fieldError('basePricePerDay')}
             </label>
+            <label>Hộp số
+              <select style={input} value={form.transmission} onChange={setField('transmission')}>
+                <option value="">— Chưa rõ —</option>
+                {Object.keys(TRANSMISSIONS).map((k) => <option key={k} value={k}>{transmissionLabel(k)}</option>)}
+              </select>
+            </label>
+            <label>Nhiên liệu
+              <select style={input} value={form.fuelType} onChange={setField('fuelType')}>
+                <option value="">— Chưa rõ —</option>
+                {Object.keys(FUEL_TYPES).map((k) => <option key={k} value={k}>{fuelLabel(k)}</option>)}
+              </select>
+            </label>
+            <label>Năm sản xuất
+              <input style={inputStyle('manufactureYear')} type="number" min="1990" value={form.manufactureYear} onChange={setField('manufactureYear')} onBlur={blurField('manufactureYear')} />
+              {fieldError('manufactureYear')}
+            </label>
             {editingId && (
               <label>Trạng thái
                 <select style={input} value={form.status} onChange={setField('status')}>
@@ -252,6 +280,7 @@ const AdminCarsPage = () => {
           <label style={{ display: 'block', marginTop: '14px' }}>Mô tả
             <textarea style={input} rows={3} value={form.description} onChange={setField('description')} />
           </label>
+          {editingId ? <CarImagesManager carId={editingId} /> : <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: 14 }}>Lưu xe xong sẽ thêm được ảnh.</p>}
           <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
             <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Đang lưu...' : 'Lưu'}</button>
             <button type="button" className="btn" onClick={closeForm} disabled={saving}>Hủy</button>

@@ -1,5 +1,7 @@
 # Kế hoạch triển khai 10 tuần — Car Rental AI
 
+> Đây là roadmap/mục tiêu nghiệm thu, không mô tả toàn bộ chức năng đã triển khai. Hiện trạng theo code: [README](../README.md), [API contract](api-contract.md), [backlog chính](jira-backlog-theo-chuc-nang.md). Không suy ra API đã tồn tại từ công việc dự kiến bên dưới.
+
 > Đề tài: Hệ thống Cho thuê Xe Thông minh — Tối ưu Giá thuê và Tư vấn Đặt xe bằng AI
 >
 > Trưởng nhóm: Nguyễn Vũ Dũng (TV A)
@@ -16,7 +18,7 @@ Xây dựng một hệ thống cho thuê xe gồm một frontend React, một ba
 
 Phạm vi AI gồm hai chức năng: dự đoán giá thuê theo đặc điểm xe và bối cảnh thuê; chatbot tư vấn xe. Khi AI không phản hồi trong thời gian quy định, hệ thống .NET phải dùng giá niêm yết làm fallback để luồng đặt xe không bị gián đoạn.
 
-Sản phẩm cuối phải chạy được theo mô hình bốn service: frontend `:3000`, .NET API `:5001`, FastAPI AI `:5002` và SQL Server `:1433`. Backend .NET là một khối deploy duy nhất nhưng bên trong chia các module Cars, Bookings và Customers.
+Sản phẩm cuối gồm năm dịch vụ chạy lâu dài: frontend `:3000`, .NET API `:5001`, FastAPI AI `:5002`, SQL Server `:1433` và MinIO `:9000/:9001`; Compose có thêm job khởi tạo bucket. Backend .NET là một khối deploy duy nhất nhưng bên trong chia các module Cars, Bookings và Customers.
 
 ## 2. Phân công cố định
 
@@ -57,7 +59,7 @@ Giá trị đề xuất cho `Priority` là `P0 — bắt buộc demo`, `P1 — c
 | Tuần | Mục tiêu | Milestone | Kết quả bắt buộc |
 |---|---|---|---|
 | W1 | Chốt nền tảng và hợp đồng | Foundation | Architecture, ADR, ERD, API contract, repo rules |
-| W2 | Dựng skeleton chạy được | Skeleton | 5 project .NET, 4 service, health check, CI |
+| W2 | Dựng skeleton chạy được | Skeleton | 5 project .NET, 5 dịch vụ chạy lâu dài, health check, CI |
 | W3 | Xây Auth và người dùng | M3 Auth | Register, login, JWT, role, customer profile |
 | W4 | Hoàn thiện quản lý xe | M4 Cars | Car CRUD, ảnh, filter cơ bản, phân quyền |
 | W5 | Hoàn thiện booking | M5 Booking | Đặt xe, chống trùng lịch, confirm/cancel |
@@ -80,7 +82,7 @@ Thống nhất cách tổ chức code, các module nghiệp vụ, sáu bảng d�
 - Viết `docs/architecture.md`, mô tả ba lớp: code architecture, system architecture và integration architecture.
 - Viết `docs/decisions.md` với ADR về Clean Architecture + Modular Monolith, AI service độc lập, HTTP sync, React/SQL Server và Docker/CI.
 - Viết `docs/api-contract.md` cho Auth, Cars, Bookings, Payments, Returns và AI.
-- Tạo `docs/erd.dbml` và `docs/erd.sql` cho Customer, Car, CarImage, Booking, Payment và ReturnRecord.
+- Duy trì `docs/erd.dbml` theo entity/model EF cho Customers, Cars, CarImages, Bookings, Payments và ReturnRecords. Schema thực thi lấy từ EF migrations, không giữ DDL viết tay độc lập.
 - Thiết lập repository, branch protection cho `main`/`develop`, quy tắc PR và reviewer.
 - Xác nhận phân công A/B/C/D/E và tạo các milestone ban đầu.
 
@@ -93,7 +95,7 @@ Thống nhất cách tổ chức code, các module nghiệp vụ, sáu bảng d�
 
 ### Deliverable
 
-`architecture.md`, `decisions.md`, `api-contract.md`, `erd.dbml`, `erd.sql`, `README.md` và quy tắc branch/PR.
+`architecture.md`, `decisions.md`, `api-contract.md`, `erd.dbml`, EF migrations, `README.md` và quy tắc branch/PR.
 
 ### Tiêu chí nghiệm thu
 
@@ -125,7 +127,7 @@ Dựng cấu trúc code và môi trường tối thiểu để mọi thành viê
 - Tạo `CarRentalDbContext` trong Infrastructure/Persistence.
 - Khai báo DbSet cho sáu entity và các quan hệ chính.
 - Cấu hình khóa ngoại, unique index cho Phone, Email, LicensePlate và quan hệ một-nhiều cần thiết.
-- Tạo migration đầu tiên hoặc xác nhận migration khớp `docs/erd.sql`.
+- Tạo/kiểm tra migration theo model EF; đối chiếu sơ đồ `docs/erd.dbml` với snapshot và quan hệ thực tế.
 - Không đưa EF Core hoặc SQL Server reference vào Domain.
 
 ### Công việc của TV C
@@ -156,7 +158,7 @@ Solution 5 project, entity khung, PricingCalculator có test, FastAPI stub, Reac
 
 ### Tiêu chí nghiệm thu
 
-`docker compose up` khởi động được bốn service; API `/health` trả 200; AI `/health` trả 200; frontend mở được; SQL Server container healthy; `dotnet build` và `dotnet test` trên CI xanh.
+`docker compose up` khởi động được frontend/API/AI/SQL Server/MinIO và job khởi tạo bucket hoàn tất; API `/health` trả 200; AI `/health` trả 200; frontend mở được; SQL Server và MinIO healthy; `dotnet build` và `dotnet test` trên CI xanh.
 
 ### Phụ thuộc
 
@@ -356,7 +358,7 @@ AI model/inference, .NET HttpClient, quote endpoint, fallback và UI giá AI.
 
 ### Tiêu chí nghiệm thu
 
-AI hoạt động thì nhận được giá dự đoán; AI tắt hoặc quá 2 giây thì API vẫn trả 200 với giá niêm yết và `isFallback: true`; request có correlation ID; final price luôn trong khoảng 400.000–1.500.000 VNĐ/ngày.
+AI hoạt động thì nhận được giá dự đoán; AI lỗi sau số lượt timeout/retry đã cấu hình thì báo giá vẫn có giá gốc và `IsFallback: true` (override và clamp vẫn áp dụng); request AI có correlation ID; final price trong khoảng 400.000–1.500.000 VNĐ/ngày. Code hiện timeout 2 giây mỗi lượt, tối đa 3 lượt, không phải deadline tổng 2 giây. Báo giá hiện dùng `POST /api/bookings/estimate` có JWT, không phải `/api/ai/quote` public.
 
 ### Phụ thuộc
 
@@ -502,7 +504,7 @@ W4 Car, W7 Payment/Booking và contract AI.
 
 ### Công việc của TV E
 
-- Hoàn thiện Dockerfile production cho cả bốn service.
+- Hoàn thiện cấu hình production cho frontend/API/AI cùng SQL Server và MinIO; ba ứng dụng có Dockerfile riêng, DB/storage dùng image tương ứng.
 - Mở rộng CI: restore, build, test, kiểm tra format/lint nếu phù hợp.
 - Cấu hình GitHub Secrets và biến môi trường staging.
 - Deploy staging Railway/Render hoặc môi trường được nhóm thống nhất.

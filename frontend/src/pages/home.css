@@ -1,0 +1,49 @@
+/* Trang chủ: màu thương hiệu xanh lục (tham khảo Mioto), dùng biến --primary-color của App.css */
+.home { margin-top: -24px; }
+.home-wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+.hero { background: linear-gradient(135deg, #064e3b 0%, #047857 60%, #10b981 100%); color: #fff; padding: 72px 0 96px; }
+.hero-inner { max-width: 880px; margin: 0 auto 0 max(16px, calc((100% - 1200px) / 2 + 16px)); }
+.eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: .8rem; font-weight: 600; opacity: .85; margin-bottom: 12px; }
+.hero h1 { font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.15; font-weight: 800; margin-bottom: 16px; }
+.hero-sub { font-size: 1.1rem; max-width: 620px; opacity: .92; margin-bottom: 32px; }
+.search-box { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; background: #fff; color: #111827; border-radius: 16px; padding: 16px; box-shadow: 0 20px 40px -12px rgba(0,0,0,.35); }
+.search-box label { display: flex; flex-direction: column; gap: 4px; font-size: .8rem; font-weight: 600; color: #4b5563; }
+.search-box select { height: 44px; border: 1px solid #d1d5db; border-radius: 10px; padding: 0 12px; background: #fff; color: #111827; font-size: 1rem; }
+.home a:focus-visible, .home button:focus-visible, .home select:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
+.home-cta { height: 44px; padding: 0 24px; display: inline-flex; align-items: center; gap: 8px; border-radius: 10px; font-weight: 700; }
+.hero-actions { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+.home-btn-light { background: #fff; color: #065f46; font-weight: 700; padding: 12px 22px; border-radius: 10px; display: inline-block; }
+.home-btn-light:hover { background: #ecfdf5; }
+.home-link-light { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+
+.dash { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-top: -48px; position: relative; }
+.dash-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; box-shadow: var(--shadow-md); }
+.dash-card h2 { font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; margin-bottom: 12px; }
+.dash-car { font-size: 1.4rem; font-weight: 700; margin-bottom: 8px; }
+.dash-meta { color: #4b5563; display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.dash-stat { font-size: 2rem; font-weight: 800; color: var(--primary-color); line-height: 1.1; }
+.dash-link { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f3f4f6; font-weight: 600; min-height: 44px; }
+.dash-link:hover { color: var(--primary-color); }
+
+.section { padding-top: 48px; }
+.section-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; }
+.section-head h2 { font-size: 1.6rem; font-weight: 800; }
+.section-more { color: var(--primary-color); font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.type-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.type-card { display: flex; flex-direction: column; gap: 4px; background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 18px; transition: border-color .2s, transform .2s; min-height: 88px; }
+.type-card:hover { border-color: var(--primary-color); transform: translateY(-2px); }
+.type-card span { color: #6b7280; font-size: .9rem; }
+.steps-band { background: #ecfdf5; margin-top: 56px; padding: 48px 0; }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
+.step-icon { width: 48px; height: 48px; border-radius: 12px; background: #d1fae5; color: #047857; display: inline-flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 12px; }
+.step h3 { font-size: 1.1rem; margin-bottom: 6px; }
+.step p { color: #4b5563; }
+.cta-band { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; background: #064e3b; color: #fff; border-radius: 20px; padding: 32px; margin-bottom: 24px; }
+.cta-band h2 { font-size: 1.5rem; margin-bottom: 6px; }
+.cta-band p { display: flex; align-items: center; gap: 6px; opacity: .9; }
+
+@media (max-width: 768px) {
+  .search-box, .dash { grid-template-columns: 1fr; }
+  .hero { padding: 48px 0 72px; }
+}
+@media (prefers-reduced-motion: reduce) { .type-card { transition: none; } }

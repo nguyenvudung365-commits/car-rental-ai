@@ -25,6 +25,10 @@ public class ExceptionHandlingMiddleware
         {
             await WriteProblem(context, StatusCodes.Status400BadRequest, ex.Message);
         }
+        catch (CarRental.Infrastructure.Files.WebpValidationException ex)
+        {
+            await WriteProblem(context, StatusCodes.Status400BadRequest, ex.Message);
+        }
         catch (UnauthorizedException ex)
         {
             await WriteProblem(context, StatusCodes.Status401Unauthorized, ex.Message);
