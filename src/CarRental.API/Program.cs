@@ -5,6 +5,7 @@ using CarRental.Application.Modules.Customers;
 using CarRental.Application.Modules.Bookings;
 using CarRental.Infrastructure.Ai;
 using CarRental.Infrastructure.Files;
+using CarRental.Infrastructure.Pdf;
 using CarRental.Infrastructure.Persistence;
 using CarRental.Infrastructure.Persistence.Repository;
 using CarRental.Infrastructure.Security;
@@ -116,6 +117,8 @@ builder.Services.AddHttpClient<IAiPricingClient, AiPricingClient>(client =>
 // --- Dependency Injection: Booking ---
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddSingleton<IContractPdfGenerator, ContractPdfGenerator>();
+builder.Services.AddScoped<IRentalService, RentalService>();
 
 // --- Unit of work ---
 builder.Services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());

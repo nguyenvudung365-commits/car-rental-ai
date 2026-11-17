@@ -128,6 +128,9 @@ Response: 200 \[ { bookingId, carLicensePlate, startDate, endDate, status, final
 
 \### PUT /api/bookings/{id}/confirm — Staff/Admin: Pending→Confirmed. Lỗi 409 nếu lệch trạng thái/overlap
 
+\### POST /api/bookings/{bookingId}/pickup — Staff/Admin → 200
+Transition: DaXacNhan → DangThue; Car status → DangThue.
+
 \### PUT /api/bookings/{id}/cancel  — Customer (chỉ khi Pending|Confirmed) / Staff (mọi trạng thái chưa Completed)
 
 \### GET /api/bookings/{id}/contract — Customer/Staff → application/pdf (QuestPDF, chỉ khi Confirmed trở đi)
@@ -142,7 +145,7 @@ Request:  { "amount": 500000, "method": "cash|transfer|momo" }
 
 Response: 201 { "paymentId": 3, "status": "Pending", ... }
 
-\### PUT /api/payments/{id}/mark-paid — Staff → 200 (status Paid, set paidAt)
+\### POST /api/payments/{paymentId}/mark-paid — Staff/Admin → 200 (status Paid, set paidAt)
 
 \### GET /api/bookings/{bookingId}/payments — Customer/Staff → 200 \[...]
 

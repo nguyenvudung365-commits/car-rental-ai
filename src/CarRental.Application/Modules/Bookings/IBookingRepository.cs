@@ -10,4 +10,7 @@ public interface IBookingRepository
     Task<List<(DateTime Start, DateTime End)>> GetActiveRangesAsync(int carId, DateTime from);
     Task AddAsync(Booking booking);
     void Update(Booking booking);
+    Task<Payment?> GetPaymentByIdAsync(int id);
+    Task AddPaymentAsync(Payment payment);
+    Task AddReturnRecordAsync(ReturnRecord record);
 }

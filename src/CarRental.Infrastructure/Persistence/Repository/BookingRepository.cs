@@ -122,4 +122,19 @@ public class BookingRepository : IBookingRepository
     {
         _context.Bookings.Update(booking);
     }
+
+    public async Task<Payment?> GetPaymentByIdAsync(int id)
+    {
+        return await _context.Payments.FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
+    }
+
+    public async Task AddPaymentAsync(Payment payment)
+    {
+        await _context.Payments.AddAsync(payment);
+    }
+
+    public async Task AddReturnRecordAsync(ReturnRecord record)
+    {
+        await _context.ReturnRecords.AddAsync(record);
+    }
 }
