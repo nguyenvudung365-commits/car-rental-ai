@@ -21,6 +21,11 @@ public class CarService : ICarService
 
     public async Task<(List<CarDto> Items, int TotalCount)> GetFilteredAsync(CarFilterRequest filter)
     {
+        if (filter.AvailableFrom.HasValue != filter.AvailableTo.HasValue)
+            throw new ValidationAppException("Cần nhập đủ cả ngày nhận và ngày trả khi lọc xe còn trống.");
+        if (filter.AvailableFrom.HasValue && filter.AvailableTo <= filter.AvailableFrom)
+            throw new ValidationAppException("Ngày trả phải sau ngày nhận.");
+
         var (items, total) = await _carRepository.GetFilteredAsync(filter);
         return (items.Select(ToDto).ToList(), total);
     }
@@ -46,6 +51,9 @@ public class CarService : ICarService
             CarAgeYears = request.CarAgeYears,
             BasePricePerDay = request.BasePricePerDay,
             Description = request.Description,
+            Transmission = request.Transmission,
+            FuelType = request.FuelType,
+            ManufactureYear = request.ManufactureYear,
             Status = CarStatus.SanSang
         };
 
@@ -73,6 +81,9 @@ public class CarService : ICarService
         car.Status = request.Status;
         car.OverridePrice = request.OverridePrice;
         car.Description = request.Description;
+        car.Transmission = request.Transmission;
+        car.FuelType = request.FuelType;
+        car.ManufactureYear = request.ManufactureYear;
 
         _carRepository.Update(car);
         await _unitOfWork.SaveChangesAsync();
@@ -146,5 +157,6 @@ public class CarService : ICarService
     private static CarDto ToDto(CarEntity car) => new(
         car.Id, car.CarType, car.Brand, car.Model, car.LicensePlate, car.Seats, car.CarAgeYears,
         car.BasePricePerDay, car.Status, car.OverridePrice, car.Description,
-        car.Images.Select(i => new CarImageDto(i.Id, i.ImageUrl, i.IsPrimary)).ToList());
+        car.Images.Select(i => new CarImageDto(i.Id, i.ImageUrl, i.IsPrimary)).ToList(),
+        car.Transmission, car.FuelType, car.ManufactureYear);
 }

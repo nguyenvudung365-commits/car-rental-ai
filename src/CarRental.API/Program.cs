@@ -2,6 +2,7 @@ using CarRental.API.Middleware;
 using CarRental.Application.Common;
 using CarRental.Application.Modules.Cars;
 using CarRental.Application.Modules.Customers;
+using CarRental.Application.Modules.Reports;
 using CarRental.Application.Modules.Bookings;
 using CarRental.Infrastructure.Ai;
 using CarRental.Infrastructure.Files;
@@ -119,6 +120,10 @@ builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddSingleton<IContractPdfGenerator, ContractPdfGenerator>();
 builder.Services.AddScoped<IRentalService, RentalService>();
+
+// --- Dependency Injection: Reports ---
+builder.Services.AddScoped<IReportRepository, ReportRepository>();
+builder.Services.AddScoped<ReportService>();
 
 // --- Unit of work ---
 builder.Services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { primaryImageOf } from '../utils/imageUrl';
+import { FiImage } from 'react-icons/fi';
 import { formatCurrency } from '../utils/formatCurrency';
 import { carStatusLabel, carTypeLabel, normalizeCarStatus } from '../utils/carLabels';
 
@@ -25,7 +27,7 @@ const CarCard = ({ car: carProp, ...rest }) => {
   const licensePlate = car.LicensePlate || car.licensePlate;
   const basePricePerDay = car.BasePricePerDay ?? car.basePricePerDay;
   const status = normalizeCarStatus(car.Status ?? car.status);
-  const primaryImageUrl = car.PrimaryImageUrl || car.primaryImageUrl;
+  const primaryImageUrl = car.PrimaryImageUrl || car.primaryImageUrl || primaryImageOf(car);
 
   // Lấy ảnh đại diện: primaryImageUrl
   const imageUrl = primaryImageUrl || '';
@@ -93,7 +95,7 @@ const CarCard = ({ car: carProp, ...rest }) => {
           />
         ) : (
           <div className="car-card-placeholder" aria-label="Không có hình ảnh">
-            <span className="placeholder-icon">🚗</span>
+            <FiImage className="placeholder-icon" size={36} aria-hidden="true" />
           </div>
         )}
       </div>

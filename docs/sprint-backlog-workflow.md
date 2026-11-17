@@ -4,7 +4,7 @@
 >
 > Phạm vi dự án: 10 tuần, 5 thành viên, chia thành 5 sprint, mỗi sprint 2 tuần.
 >
-> Tài liệu liên quan: [Kế hoạch triển khai 10 tuần](weekly-plan.md), [Hướng dẫn quản lý Jira](jira-project-management-guide.md), [Quyết định kiến trúc](decisions.md).
+> Tài liệu liên quan: [Kế hoạch triển khai 10 tuần](weekly-plan.md), [Backlog chính theo chức năng](jira-backlog-theo-chuc-nang.md), [Quyết định kiến trúc](decisions.md). Lịch/nhãn thẻ theo backlog chính; các bảng bên dưới là hướng dẫn quy trình, không xác nhận trạng thái Jira hiện tại.
 
 ---
 

@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
 
 // Các trang Khách hàng & Công khai
+import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CarListPage from './pages/CarListPage';
@@ -17,7 +18,6 @@ import MyBookingsPage from './pages/MyBookingsPage';
 import AdminBookingsPage from './pages/admin/AdminBookingsPage';
 import AdminReturnPage from './pages/admin/AdminReturnPage';
 import AdminCarsPage from './pages/admin/AdminCarsPage';
-import AdminCarImagesPage from './pages/admin/AdminCarImagesPage';
 import AdminReportsPage from './pages/admin/AdminReportsPage';
 
 /**
@@ -31,7 +31,7 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             {/* Public Routes - Khách vãng lai và mọi người dùng */}
-            <Route path="/" element={<Navigate to="/cars" replace />} />
+            <Route path="/" element={<HomePage />} />
             <Route path="/cars" element={<CarListPage />} />
             <Route path="/cars/:id" element={<CarDetailPage />} />
             <Route path="/login" element={<LoginPage />} />
@@ -48,14 +48,13 @@ function App() {
               <Route path="/admin/bookings" element={<AdminBookingsPage />} />
               <Route path="/admin/returns" element={<AdminReturnPage />} />
               <Route path="/admin/cars" element={<AdminCarsPage />} />
-              <Route path="/admin/car-images" element={<AdminCarImagesPage />} />
             </Route>
             <Route element={<PrivateRoute roles={['Admin']} />}>
               <Route path="/admin/reports" element={<AdminReportsPage />} />
             </Route>
 
             {/* Bắt tất cả các đường dẫn không hợp lệ -> Chuyển hướng về danh sách xe */}
-            <Route path="*" element={<Navigate to="/cars" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
       </BrowserRouter>

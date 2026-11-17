@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { imageUrl, isPrimaryImage } from '../utils/imageUrl';
 
 /**
  * Bộ sưu tập hình ảnh xe (ImageGallery)
@@ -12,7 +13,7 @@ const ImageGallery = ({ images = [] }) => {
 
   // Tìm index của ảnh thumbnail mặc định (nếu có)
   const getInitialIndex = () => {
-    const thumbIndex = imageList.findIndex((img) => img?.isThumbnail);
+    const thumbIndex = imageList.findIndex((img) => isPrimaryImage(img));
     return thumbIndex >= 0 ? thumbIndex : 0;
   };
 
@@ -47,9 +48,9 @@ const ImageGallery = ({ images = [] }) => {
     <div className="image-gallery">
       {/* Khung hiển thị ảnh lớn */}
       <div className="gallery-main-wrapper">
-        {currentImage?.url && !mainImgError ? (
+        {imageUrl(currentImage) && !mainImgError ? (
           <img
-            src={currentImage.url}
+            src={imageUrl(currentImage)}
             alt="Hình ảnh chi tiết xe"
             className="gallery-main-image"
             onError={() => setMainImgError(true)}
@@ -80,14 +81,14 @@ const ImageGallery = ({ images = [] }) => {
                 }}
               >
                 <img
-                  src={img.url}
+                  src={imageUrl(img)}
                   alt={`Ảnh nhỏ ${index + 1}`}
                   className="gallery-thumb-image"
                   onError={(e) => {
                     e.target.style.display = 'none';
                   }}
                 />
-                {img.isThumbnail && (
+                {isPrimaryImage(img) && (
                   <span className="thumb-primary-tag">Chính</span>
                 )}
               </button>

@@ -28,6 +28,22 @@ public enum CarType
     Luxury = 6
 }
 
+/// <summary>Hộp số.</summary>
+public enum Transmission
+{
+    SoSan = 1,
+    SoTuDong = 2
+}
+
+/// <summary>Loại nhiên liệu.</summary>
+public enum FuelType
+{
+    Xang = 1,
+    Dau = 2,
+    Dien = 3,
+    Hybrid = 4
+}
+
 /// <summary>Trạng thái booking.</summary>
 public enum BookingStatus
 {
