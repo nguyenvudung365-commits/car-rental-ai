@@ -1,24 +1,28 @@
 using CarRental.Application.Common;
 using CarRental.Application.Modules.Cars;
+using CarRental.Application.Modules.Pricing;
 using CarRental.Domain.Common;
 using CarRental.Domain.Modules.Bookings;
 using CarRental.Domain.Modules.Cars;
 
 namespace CarRental.Application.Modules.Bookings;
 
-public class BookingService : IBookingService
+public partial class BookingService : IBookingService
 {
     private readonly IBookingRepository _bookingRepository;
     private readonly ICarRepository _carRepository;
     private readonly IAiPricingClient _aiPricingClient;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IBookingChargeCalculator _charges;
 
     public BookingService(
         IBookingRepository bookingRepository,
         ICarRepository carRepository,
         IAiPricingClient aiPricingClient,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IBookingChargeCalculator? charges = null)
     {
+        _charges = charges ?? NoCharges.Instance;
         _bookingRepository = bookingRepository;
         _carRepository = carRepository;
         _aiPricingClient = aiPricingClient;
@@ -48,11 +52,17 @@ public class BookingService : IBookingService
             throw new ConflictException("CAR_NOT_AVAILABLE", "Xe không sẵn sàng cho thuê");
         }
 
+        var mode = request.Mode ?? RentalMode.TheoNgay;
+        ValidateMode(mode, request.StartDate, request.EndDate, car);
         var correlationId = Guid.NewGuid().ToString();
-        var rentalDays = (request.EndDate - request.StartDate).Days;
+        var rentalDays = mode == RentalMode.TheoGio ? 1 : (request.EndDate - request.StartDate).Days;
 
         // Gọi AI ngoài transaction để không giữ khóa DB trong lúc chờ timeout/retry.
-        var (aiResponse, finalPrice) = await QuoteAsync(car, request.StartDate, rentalDays, correlationId);
+        var (aiResponse, finalPrice) = await QuoteAsync(car, mode, request.StartDate, rentalDays, correlationId);
+        var options = request.ToOptions();
+        var rentalAmount = RentalAmount(car, mode, request.StartDate, request.EndDate, finalPrice, rentalDays);
+        var lines = await _charges.CalculateAsync(new ChargeContext(customerId, car, request.StartDate, request.EndDate, mode, rentalAmount, options));
+        var (pickupBranch, returnBranch) = await _charges.ResolveBranchesAsync(car.BranchId, options);
 
         // Khóa dòng xe rồi kiểm tra trùng lịch và ghi booking trong cùng một transaction:
         // hai request đồng thời cùng xe phải xếp hàng nên không thể cùng vượt qua bước kiểm tra.
@@ -70,6 +80,7 @@ public class BookingService : IBookingService
                 throw new ConflictException("BOOKING_OVERLAP", "Xe đã có lịch thuê trong khoảng thời gian này");
             }
 
+            var charges = await _charges.RedeemAsync(customerId, lines);
             var booking = new Booking
             {
                 CustomerId = customerId,
@@ -78,11 +89,18 @@ public class BookingService : IBookingService
                 EndDate = request.EndDate,
                 PredictedPricePerDay = aiResponse.PredictedPrice,
                 FinalPricePerDay = finalPrice,
-                TotalPrice = finalPrice * rentalDays,
+                TotalPrice = rentalAmount + charges.Sum(c => c.Amount),
                 IsFallback = aiResponse.IsFallback,
                 Status = BookingStatus.ChoXacNhan,
                 CorrelationId = correlationId,
                 Note = request.Note,
+                Mode = mode,
+                WithDriver = options.WithDriver,
+                DeliveryAddress = Trim(options.DeliveryAddress),
+                ReturnAddress = Trim(options.ReturnAddress),
+                PickupBranchId = pickupBranch,
+                ReturnBranchId = returnBranch,
+                Charges = charges,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -95,8 +113,14 @@ public class BookingService : IBookingService
         return await GetByIdAsync(bookingId);
     }
 
-    private async Task<(PredictPriceResult Ai, decimal FinalPricePerDay)> QuoteAsync(Car car, DateTime start, int rentalDays, string? correlationId = null)
+    private async Task<(PredictPriceResult Ai, decimal FinalPricePerDay)> QuoteAsync(Car car, RentalMode mode, DateTime start, int rentalDays, string? correlationId = null)
     {
+        if (mode == RentalMode.TheoGio) // giá theo giờ cố định theo xe, không cần AI
+        {
+            var hourly = PricingCalculator.ResolveFinalPricePerDay(car.OverridePrice, null, car.BasePricePerDay);
+            return (new PredictPriceResult(hourly, false), hourly);
+        }
+
         var aiResponse = await _aiPricingClient.PredictPriceAsync(new PredictPriceRequest(
             (int)car.CarType,
             car.CarAgeYears,
@@ -122,10 +146,15 @@ public class BookingService : IBookingService
         var car = await _carRepository.GetByIdAsync(request.CarId)
             ?? throw new NotFoundException("Car", request.CarId);
 
-        var rentalDays = (request.EndDate - request.StartDate).Days;
-        var (ai, finalPrice) = await QuoteAsync(car, request.StartDate, rentalDays);
+        var mode = request.Mode ?? RentalMode.TheoNgay;
+        ValidateMode(mode, request.StartDate, request.EndDate, car);
+        var rentalDays = mode == RentalMode.TheoGio ? 1 : (request.EndDate - request.StartDate).Days;
+        var (ai, finalPrice) = await QuoteAsync(car, mode, request.StartDate, rentalDays);
+        var rentalAmount = RentalAmount(car, mode, request.StartDate, request.EndDate, finalPrice, rentalDays);
+        var lines = await _charges.CalculateAsync(new ChargeContext(null, car, request.StartDate, request.EndDate, mode, rentalAmount, request.ToOptions()));
         return new BookingEstimateDto(
-            rentalDays, car.BasePricePerDay, ai.PredictedPrice, finalPrice, finalPrice * rentalDays, ai.IsFallback);
+            rentalDays, car.BasePricePerDay, ai.PredictedPrice, finalPrice, rentalAmount + lines.Sum(l => l.Amount), ai.IsFallback,
+            rentalAmount, lines.Select(l => new ChargeLineDto(l.Kind.ToString(), l.Name, l.Amount)).ToList());
     }
 
     public async Task<List<BookedRangeDto>> GetBookedRangesAsync(int carId)
@@ -201,14 +230,14 @@ public class BookingService : IBookingService
         }
 
         _bookingRepository.Update(booking);
-        await _unitOfWork.SaveChangesAsync();
+        await SaveCancelledAsync(booking);
 
         return ToDto(booking);
     }
 
     private BookingDto ToDto(Booking booking)
     {
-        var rentalDays = (booking.EndDate - booking.StartDate).Days;
+        var rentalDays = booking.Mode == RentalMode.TheoGio ? 1 : (booking.EndDate - booking.StartDate).Days;
         var carName = booking.Car != null
             ? $"{booking.Car.Brand} {booking.Car.Model}"
             : "";
@@ -229,7 +258,14 @@ public class BookingService : IBookingService
             booking.Status.ToString(),
             booking.CorrelationId,
             booking.Note,
-            booking.CreatedAt
+            booking.CreatedAt,
+            booking.Mode,
+            booking.WithDriver,
+            booking.DeliveryAddress,
+            booking.ReturnAddress,
+            booking.PickupBranchId,
+            booking.ReturnBranchId,
+            booking.Charges.Select(c => new ChargeLineDto(c.Kind.ToString(), c.Name, c.Amount)).ToList()
         );
     }
 }

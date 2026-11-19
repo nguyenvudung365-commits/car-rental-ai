@@ -26,6 +26,7 @@ export const NAV_ITEMS = [
   { to: '/admin/documents', label: 'Duyệt giấy tờ', roles: ['Staff', 'Admin'] },
   { to: '/admin/blacklist', label: 'Danh sách đen', roles: ['Staff', 'Admin'] },
   { to: '/admin/reports', label: 'Báo cáo', roles: ['Admin'] },
+  { to: '/admin/pricing', label: 'Giá & chi nhánh', roles: ['Admin'] },
   { to: '/admin/users', label: 'Người dùng', roles: ['Admin'] },
   { to: '/admin/audit-logs', label: 'Nhật ký', roles: ['Admin'] },
 ];

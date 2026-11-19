@@ -1,4 +1,5 @@
 using CarRental.Application.Common;
+using CarRental.Application.Modules.Pricing;
 using CarRental.Domain.Common;
 using Microsoft.AspNetCore.Http;
 using CarEntity = CarRental.Domain.Modules.Cars.Car;
@@ -11,9 +12,11 @@ public class CarService : ICarService
     private readonly ICarRepository _carRepository;
     private readonly IFileStorageService _fileStorageService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IPricingRepository? _pricing;
 
-    public CarService(ICarRepository carRepository, IFileStorageService fileStorageService, IUnitOfWork unitOfWork)
+    public CarService(ICarRepository carRepository, IFileStorageService fileStorageService, IUnitOfWork unitOfWork, IPricingRepository? pricing = null)
     {
+        _pricing = pricing;
         _carRepository = carRepository;
         _fileStorageService = fileStorageService;
         _unitOfWork = unitOfWork;
@@ -37,10 +40,21 @@ public class CarService : ICarService
         return ToDto(car);
     }
 
+    private async Task EnsureBranchAsync(int? branchId)
+    {
+        if (!branchId.HasValue || _pricing is null) return;
+        var b = await _pricing.GetBranchAsync(branchId.Value);
+        if (b is null || !b.IsActive)
+            throw new ValidationAppException("BRANCH_INVALID", "Chi nhánh không tồn tại hoặc đã ngừng hoạt động.");
+    }
+
     public async Task<CarDto> CreateAsync(CreateCarRequest request, bool isAdmin)
     {
         if (!isAdmin && request.SecurityDeposit is > 0)
             throw new ForbiddenException("PRICE_ADMIN_ONLY", "Chỉ quản trị viên được đặt tiền cọc xe.");
+        if (!isAdmin && request.PricePerHour.HasValue)
+            throw new ForbiddenException("PRICE_ADMIN_ONLY", "Chỉ quản trị viên được đặt giá thuê theo giờ.");
+        await EnsureBranchAsync(request.BranchId);
         if (await _carRepository.GetByLicensePlateAsync(request.LicensePlate) is not null)
             throw new ConflictException("PLATE_EXISTS", $"Biển số '{request.LicensePlate}' đã tồn tại."); // PLATE_EXISTS
 
@@ -58,6 +72,8 @@ public class CarService : ICarService
             FuelType = request.FuelType,
             ManufactureYear = request.ManufactureYear,
             SecurityDeposit = request.SecurityDeposit ?? 0,
+            BranchId = request.BranchId,
+            PricePerHour = request.PricePerHour,
             Status = isAdmin ? CarStatus.SanSang : CarStatus.ChoDuyet
         };
 
@@ -77,11 +93,14 @@ public class CarService : ICarService
                 throw new ForbiddenException("PRICE_ADMIN_ONLY", "Chỉ quản trị viên được đổi giá xe.");
             if (request.SecurityDeposit.HasValue && request.SecurityDeposit != car.SecurityDeposit)
                 throw new ForbiddenException("PRICE_ADMIN_ONLY", "Chỉ quản trị viên được đổi tiền cọc xe.");
+            if (request.PricePerHour.HasValue && request.PricePerHour != car.PricePerHour)
+                throw new ForbiddenException("PRICE_ADMIN_ONLY", "Chỉ quản trị viên được đổi giá thuê theo giờ.");
             // Duyệt xe phải qua Admin: Staff không được đưa xe ra/vào trạng thái ChoDuyet.
             if ((request.Status == CarStatus.ChoDuyet) != (car.Status == CarStatus.ChoDuyet))
                 throw new ForbiddenException("CAR_APPROVAL_ADMIN_ONLY", "Chỉ quản trị viên được duyệt xe.");
         }
 
+        if (request.BranchId != car.BranchId) await EnsureBranchAsync(request.BranchId);
         var duplicate = await _carRepository.GetByLicensePlateAsync(request.LicensePlate);
         if (duplicate is not null && duplicate.Id != id)
             throw new ConflictException("PLATE_EXISTS", $"Biển số '{request.LicensePlate}' đã tồn tại.");
@@ -100,6 +119,8 @@ public class CarService : ICarService
         car.FuelType = request.FuelType;
         car.ManufactureYear = request.ManufactureYear;
         if (request.SecurityDeposit.HasValue) car.SecurityDeposit = request.SecurityDeposit.Value;
+        if (request.BranchId.HasValue) car.BranchId = request.BranchId;
+        if (request.PricePerHour.HasValue) car.PricePerHour = request.PricePerHour;
 
         _carRepository.Update(car);
         await _unitOfWork.SaveChangesAsync();
@@ -192,5 +213,5 @@ public class CarService : ICarService
         car.Id, car.CarType, car.Brand, car.Model, car.LicensePlate, car.Seats, car.CarAgeYears,
         car.BasePricePerDay, car.Status, car.OverridePrice, car.Description,
         car.Images.Select(i => new CarImageDto(i.Id, i.ImageUrl, i.IsPrimary)).ToList(),
-        car.Transmission, car.FuelType, car.ManufactureYear, car.SecurityDeposit);
+        car.Transmission, car.FuelType, car.ManufactureYear, car.SecurityDeposit, car.BranchId, car.PricePerHour);
 }

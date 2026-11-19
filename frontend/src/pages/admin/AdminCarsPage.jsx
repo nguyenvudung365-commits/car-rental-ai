@@ -28,6 +28,8 @@ const EMPTY_FORM = {
   transmission: '',
   fuelType: '',
   manufactureYear: '',
+  branchId: '',
+  pricePerHour: '',
 };
 
 const card = { backgroundColor: '#fff', borderRadius: '10px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' };
@@ -38,6 +40,8 @@ const td = { padding: '10px', borderBottom: '1px solid #f3f4f6', fontSize: '0.92
 const AdminCarsPage = () => {
   const isAdmin = useAuth?.()?.user?.role === 'Admin';
   const [cars, setCars] = useState([]);
+  const [branches, setBranches] = useState([]);
+  useEffect(() => { axiosClient.get('/branches').then((r) => setBranches(r.data || [])).catch(() => setBranches([])); }, []);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -100,6 +104,8 @@ const AdminCarsPage = () => {
       transmission: normalizeTransmission(car.Transmission ?? car.transmission),
       fuelType: normalizeFuelType(car.FuelType ?? car.fuelType),
       manufactureYear: car.ManufactureYear ?? car.manufactureYear ?? '',
+      branchId: car.BranchId ?? '',
+      pricePerHour: car.PricePerHour ?? '',
     });
     setShowForm(true);
     setError(null);
@@ -159,6 +165,9 @@ const AdminCarsPage = () => {
       Transmission: TRANSMISSIONS[form.transmission] ?? null,
       FuelType: FUEL_TYPES[form.fuelType] ?? null,
       ManufactureYear: form.manufactureYear === '' ? null : Number(form.manufactureYear),
+      BranchId: form.branchId === '' ? null : Number(form.branchId),
+      // Giá giờ chỉ Admin được đặt; Staff gửi null (backend chặn nếu khác giá cũ)
+      PricePerHour: isAdmin && form.pricePerHour !== '' ? Number(form.pricePerHour) : null,
     };
 
     try {
@@ -277,6 +286,17 @@ const AdminCarsPage = () => {
               <input style={inputStyle('carAgeYears')} type="number" min="0" max="50" value={form.carAgeYears} onChange={setField('carAgeYears')} onBlur={blurField('carAgeYears')} />
               {fieldError('carAgeYears')}
             </label>
+            <label>Chi nhánh
+              <select style={input} value={form.branchId} onChange={setField('branchId')}>
+                <option value="">Chưa gán</option>
+                {branches.map((b) => <option key={b.Id} value={b.Id}>{b.Name}</option>)}
+              </select>
+            </label>
+            {isAdmin && (
+              <label>Giá thuê theo giờ (VNĐ)
+                <input style={input} type="number" min="1" value={form.pricePerHour ?? ''} onChange={setField('pricePerHour')} placeholder="Để trống = giá ngày chia 8" />
+              </label>
+            )}
             <label>{isAdmin || !editingId ? 'Giá thuê gốc / ngày (VNĐ)' : 'Giá thuê gốc / ngày (chỉ Admin sửa)'}{!isAdmin && !editingId ? ' - giá đề xuất' : ''}
               <input style={inputStyle('basePricePerDay')} type="number" min="1" value={form.basePricePerDay} onChange={setField('basePricePerDay')} onBlur={blurField('basePricePerDay')} required readOnly={!isAdmin && Boolean(editingId)} />
               {fieldError('basePricePerDay')}
