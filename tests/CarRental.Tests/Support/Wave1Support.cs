@@ -88,6 +88,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
         public void Delete(string relativePath) { }
 
+        public Task<(Stream Content, string ContentType)> OpenReadAsync(string key)
+            => Task.FromResult<(Stream, string)>((new MemoryStream(WebpBytes.Tiny), "image/webp"));
     }
 }
 

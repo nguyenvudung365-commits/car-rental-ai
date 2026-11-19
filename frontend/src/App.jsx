@@ -13,6 +13,7 @@ import CarListPage from './pages/CarListPage';
 import CarDetailPage from './pages/CarDetailPage';
 import BookingPage from './pages/BookingPage';
 import MyBookingsPage from './pages/MyBookingsPage';
+import ProfilePage from './pages/ProfilePage';
 
 // Các trang Quản trị viên (Admin)
 import { adminRoutes } from './routes/adminRoutes';
@@ -38,6 +39,7 @@ function App() {
             <Route element={<PrivateRoute roles={['Customer', 'Staff', 'Admin']} />}>
               <Route path="/booking/:carId" element={<BookingPage />} />
               <Route path="/my-bookings" element={<MyBookingsPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Route>
 
             {/* Admin Routes - Chỉ dành riêng cho quyền quản trị viên Admin */}

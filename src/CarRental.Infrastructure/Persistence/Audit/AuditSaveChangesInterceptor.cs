@@ -18,7 +18,8 @@ public class AuditSaveChangesInterceptor : SaveChangesInterceptor
 {
     // Thêm entity mới của các đợt sau vào đây.
     private static readonly HashSet<Type> Whitelist =
-        [typeof(Car), typeof(Booking), typeof(Payment), typeof(ReturnRecord), typeof(Customer), typeof(BlacklistEntry)];
+        [typeof(Car), typeof(Booking), typeof(Payment), typeof(ReturnRecord), typeof(Customer), typeof(BlacklistEntry),
+         typeof(CustomerDocument), typeof(LoyaltyTransaction)];
 
     private const int MaxChangesLength = 8000;
 

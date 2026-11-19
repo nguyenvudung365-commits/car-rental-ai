@@ -80,3 +80,43 @@ public enum BlacklistLevel
     CanhBao = 1,
     Chan = 2
 }
+
+/// <summary>Loại giấy tờ khách nộp để xác minh.</summary>
+public enum DocumentType
+{
+    Cccd = 1,
+    BangLai = 2
+}
+
+/// <summary>Trạng thái duyệt một giấy tờ.</summary>
+public enum DocumentStatus
+{
+    ChoDuyet = 1,
+    DaDuyet = 2,
+    TuChoi = 3
+}
+
+/// <summary>Tình trạng giấy tờ tổng hợp của khách: DaDuyet khi cả CCCD và bằng lái đã duyệt.</summary>
+public enum DocumentsOverallStatus
+{
+    ChuaNop = 1,
+    ChoDuyet = 2,
+    TuChoi = 3,
+    DaDuyet = 4
+}
+
+/// <summary>Hạng thành viên theo tổng điểm tích lũy trọn đời.</summary>
+public enum MemberTier
+{
+    ThanhVien = 1,
+    Bac = 2,
+    Vang = 3,
+    KimCuong = 4
+}
+
+/// <summary>Lý do thay đổi điểm thưởng.</summary>
+public enum LoyaltyReason
+{
+    TichDiem = 1,
+    DieuChinh = 2
+}

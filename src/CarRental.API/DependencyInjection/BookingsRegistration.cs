@@ -14,7 +14,9 @@ public static class BookingsRegistration
         services.AddScoped<IBookingService>(sp =>
             ActivatorUtilities.CreateInstance<BookingServiceGuard>(sp, sp.GetRequiredService<BookingService>()));
         services.AddSingleton<IContractPdfGenerator, ContractPdfGenerator>();
-        services.AddScoped<IRentalService, RentalService>();
+        services.AddScoped<RentalService>();
+        services.AddScoped<IRentalService>(sp =>
+            ActivatorUtilities.CreateInstance<RentalServiceGuard>(sp, sp.GetRequiredService<RentalService>()));
         return services;
     }
 }

@@ -41,6 +41,14 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
             .HasIndex(c => c.PhoneNumber)
             .IsUnique();
 
+        modelBuilder.Entity<CustomerEntity>()
+            .Property(c => c.AvatarKey)
+            .HasMaxLength(300);
+
+        // Chống mất cập nhật điểm khi ghi đồng thời (LoyaltyService thử lại khi xung đột).
+        modelBuilder.Entity<CustomerEntity>().Property(c => c.LoyaltyPoints).IsConcurrencyToken();
+        modelBuilder.Entity<CustomerEntity>().Property(c => c.LifetimePoints).IsConcurrencyToken();
+
         modelBuilder.Entity<CarEntity>()
             .HasIndex(c => c.LicensePlate)
             .IsUnique();

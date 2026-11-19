@@ -4,6 +4,7 @@ import { FiMenu, FiX, FiTruck } from 'react-icons/fi';
 import useAuth from '../auth/AuthContext';
 import { roleLabel } from '../utils/roleLabels';
 import { NAV_ITEMS } from '../utils/permissions';
+import TierBadge from './TierBadge';
 
 /**
  * Navbar - Thanh điều hướng chính của ứng dụng
@@ -11,7 +12,7 @@ import { NAV_ITEMS } from '../utils/permissions';
  */
 const Navbar = () => {
   const auth = useAuth?.() || {};
-  const { user, token, logout } = auth;
+  const { user, token, logout, profile } = auth;
   const navigate = useNavigate();
   const location = useLocation();
 

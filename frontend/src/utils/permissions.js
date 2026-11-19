@@ -10,6 +10,9 @@ const ACTIONS = {
   'user.manage': ['Admin'],
   'audit.view': ['Admin'],
   'report.view': ['Admin'],
+  'customer.view': ['Staff', 'Admin'],
+  'customer.manage': ['Admin'],
+  'document.review': ['Staff', 'Admin'],
 };
 
 export const can = (role, action) => (ACTIONS[action] || []).includes(role);
@@ -19,6 +22,8 @@ export const NAV_ITEMS = [
   { to: '/admin/bookings', label: 'Quản lý đơn', roles: ['Staff', 'Admin'] },
   { to: '/admin/returns', label: 'Trả xe', roles: ['Staff', 'Admin'] },
   { to: '/admin/cars', label: 'Quản lý xe', roles: ['Staff', 'Admin'] },
+  { to: '/admin/customers', label: 'Khách hàng', roles: ['Staff', 'Admin'] },
+  { to: '/admin/documents', label: 'Duyệt giấy tờ', roles: ['Staff', 'Admin'] },
   { to: '/admin/blacklist', label: 'Danh sách đen', roles: ['Staff', 'Admin'] },
   { to: '/admin/reports', label: 'Báo cáo', roles: ['Admin'] },
   { to: '/admin/users', label: 'Người dùng', roles: ['Admin'] },

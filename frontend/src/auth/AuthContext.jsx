@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
 
   // Khi ứng dụng khởi chạy, đọc token và thông tin user từ localStorage
   useEffect(() => {
@@ -82,6 +83,14 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
+  };
+
+  // Làm mới hạng thành viên/ảnh đại diện từ /auth/me (hiển thị trên Navbar)
+  const refreshProfile = async () => {
+    try {
+      const { data } = await axiosClient.get('/auth/me');
+      setProfile(data);
+    } catch { /* bỏ qua: không ảnh hưởng phiên đăng nhập */ }
   };
 
   // Các biến tiện ích kiểm tra quyền

@@ -16,6 +16,14 @@ public static class CustomersRegistration
         services.AddScoped<BlacklistService>();
         services.AddScoped<IBlacklistService>(sp => sp.GetRequiredService<BlacklistService>());
         services.AddScoped<ICustomerScreening>(sp => sp.GetRequiredService<BlacklistService>());
+        services.AddScoped<IDocumentRepository, DocumentRepository>();
+        services.AddScoped<DocumentService>();
+        services.AddScoped<IDocumentService>(sp => sp.GetRequiredService<DocumentService>());
+        services.AddScoped<IDocumentVerification>(sp => sp.GetRequiredService<DocumentService>());
+        services.AddScoped<ILoyaltyRepository, LoyaltyRepository>();
+        services.AddScoped<ILoyaltyService, LoyaltyService>();
+        services.AddScoped<ICustomerAdminRepository, CustomerAdminRepository>();
+        services.AddScoped<ICustomerAdminService, CustomerAdminService>();
         return services;
     }
 }

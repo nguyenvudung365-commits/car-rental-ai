@@ -31,5 +31,14 @@ public class Customer : BaseEntity
 
     public string? LockReason { get; set; }
 
+    /// <summary>Object key ảnh đại diện (prefix avatars/, đọc công khai).</summary>
+    public string? AvatarKey { get; set; }
+
+    /// <summary>Số dư điểm thưởng hiện có.</summary>
+    public int LoyaltyPoints { get; set; }
+
+    /// <summary>Tổng điểm đã tích lũy trọn đời (không trừ khi tiêu), dùng để xếp hạng.</summary>
+    public int LifetimePoints { get; set; }
+
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 }
