@@ -7,6 +7,7 @@ import PendingExtensionsPanel from '../../components/PendingExtensionsPanel';
 import { useNavigate } from 'react-router-dom';
 import { formatLocalDateTime } from '../../utils/utcTime';
 import BlacklistBadge from '../../components/BlacklistBadge';
+import { downloadFile } from '../../utils/downloadBlob';
 
 /**
  * Trang Quản lý Đơn thuê (AdminBookingsPage)
@@ -269,6 +270,14 @@ const AdminBookingsPage = () => {
         <p style={{ color: '#6b7280', marginTop: '6px', fontSize: '0.95rem' }}>
           Xem danh sách đơn đặt xe, duyệt đơn chờ duyệt, hủy đơn và điều chỉnh giá thuê.
         </p>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => downloadFile('/bookings/export', { status: statusFilter === 'ALL' ? undefined : statusFilter }, 'don-thue.xlsx')
+            .catch((e) => setNotification({ type: 'error', message: e.message }))}
+        >
+          Xuất Excel
+        </button>
       </div>
 
       <PendingExtensionsPanel onChanged={fetchBookings} />

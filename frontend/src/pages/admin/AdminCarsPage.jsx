@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import CarImportModal from '../../components/CarImportModal';
 import axiosClient from '../../api/axiosClient';
 import { carTypeLabel, carStatusLabel, normalizeCarType, normalizeCarStatus, normalizeTransmission, normalizeFuelType, TRANSMISSIONS, FUEL_TYPES, transmissionLabel, fuelLabel } from '../../utils/carLabels';
 import CarImagesManager from '../../components/CarImagesManager';
@@ -50,6 +51,7 @@ const AdminCarsPage = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [notification, setNotification] = useState(null);
@@ -241,9 +243,11 @@ const AdminCarsPage = () => {
         </div>
         {!showForm && (
           <div style={{ display: 'flex', gap: '8px' }}>
+            <button type="button" className="btn" onClick={() => setShowImport(true)}>Nhập từ Excel</button>
             <button type="button" className="btn btn-primary" onClick={openCreate}>+ Thêm xe</button>
           </div>
         )}
+        {showImport && <CarImportModal isAdmin={isAdmin} onClose={() => setShowImport(false)} onImported={() => fetchCars()} />}
       </div>
 
       {notification && (

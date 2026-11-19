@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { formatCurrency } from '../../utils/formatCurrency';
+import { downloadFile } from '../../utils/downloadBlob';
 
 /**
  * Trang Báo Cáo & Thống Kê Quản Trị (AdminReportsPage)
@@ -13,6 +14,8 @@ import { formatCurrency } from '../../utils/formatCurrency';
  *   + Thống kê: Tổng số xe (totalCars), Tỷ lệ lấp đầy trung bình (avgOccupancyRate)
  *   + Bảng chi tiết tỷ lệ lấp đầy theo từng xe/biển số (byCar)
  */
+const METHOD_LABEL = { 1: 'Tiền mặt', 2: 'Chuyển khoản', 3: 'Thẻ nội địa', 4: 'Ví điện tử', 6: 'Trừ cọc' };
+
 const AdminReportsPage = () => {
   // Khoảng thời gian lọc báo cáo (mặc định từ ngày đầu năm hoặc 30 ngày trước đến hiện tại)
   const [fromDate, setFromDate] = useState(() => {
@@ -60,6 +63,11 @@ const AdminReportsPage = () => {
           revenue: m.revenue ?? m.Revenue ?? 0,
           bookings: m.bookings ?? m.Bookings ?? 0,
         })),
+        byMethod: (d.byMethod ?? d.ByMethod ?? []).map((m) => ({
+          method: m.method ?? m.Method,
+          revenue: m.revenue ?? m.Revenue ?? 0,
+          payments: m.payments ?? m.Payments ?? 0,
+        })),
       });
     } catch (err) {
       console.error('Lỗi khi tải báo cáo doanh thu:', err);
@@ -105,6 +113,16 @@ const AdminReportsPage = () => {
       fetchOccupancyReport();
     }
   }, [activeTab, fetchRevenueReport, fetchOccupancyReport]);
+
+  // Xuất báo cáo của tab đang xem (GET /reports/{revenue|occupancy}/export?format=)
+  const handleExport = async (format) => {
+    try {
+      setError(null);
+      await downloadFile(`/reports/${activeTab}/export`, { format, from: fromDate || undefined, to: toDate || undefined }, `bao-cao.${format}`);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   // Xử lý khi nhấn nút "Xem báo cáo"
   const handleFilterSubmit = (e) => {
@@ -261,6 +279,8 @@ const AdminReportsPage = () => {
             >
               30 ngày qua
             </button>
+            <button type="button" onClick={() => handleExport('xlsx')} className="btn">Xuất Excel</button>
+            <button type="button" onClick={() => handleExport('pdf')} className="btn">Xuất PDF</button>
           </div>
         </form>
       </div>
@@ -410,6 +430,32 @@ const AdminReportsPage = () => {
               </div>
             </div>
           </div>
+
+          {/* Biểu đồ cột doanh thu theo tháng (div CSS) và doanh thu theo phương thức */}
+          {revenueData?.byMonth?.length > 0 && (
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '10px', padding: '20px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px' }}>Doanh thu theo tháng</h2>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', height: '180px' }}>
+                {revenueData.byMonth.map((m) => {
+                  const max = Math.max(...revenueData.byMonth.map((x) => x.revenue), 1);
+                  return (
+                    <div key={m.month} style={{ flex: 1, textAlign: 'center', minWidth: 0 }} title={renderPrice(m.revenue)}>
+                      <div style={{ height: `${Math.max(2, (m.revenue / max) * 140)}px`, background: '#2563eb', borderRadius: '4px 4px 0 0' }} />
+                      <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>{m.month}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              {revenueData.byMethod?.length > 0 && (
+                <div style={{ marginTop: '20px', display: 'flex', gap: '24px', flexWrap: 'wrap', fontSize: '0.9rem' }}>
+                  {revenueData.byMethod.map((m) => (
+                    <div key={m.method}><strong>{METHOD_LABEL[m.method] || m.method}</strong>: {renderPrice(m.revenue)} ({m.payments} khoản)</div>
+                  ))}
+                </div>
+              )}
+              <p style={{ fontSize: '0.8rem', color: '#9ca3af', margin: '12px 0 0' }}>Doanh thu không tính tiền cọc bảo đảm.</p>
+            </div>
+          )}
 
           {/* Bảng chi tiết doanh thu theo tháng (byMonth) */}
           <div

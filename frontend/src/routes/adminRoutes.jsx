@@ -12,7 +12,14 @@ import AdminCustomerDetailPage from '../pages/admin/AdminCustomerDetailPage';
 import AdminHandoverPage from '../pages/admin/AdminHandoverPage';
 import AdminPricingPage from '../pages/admin/AdminPricingPage';
 
+import AdminDashboardPage from '../pages/admin/AdminDashboardPage';
+import AdminCalendarPage from '../pages/admin/AdminCalendarPage';
+import AdminMaintenancePage from '../pages/admin/AdminMaintenancePage';
+
 export const adminRoutes = [
+  { path: '/admin', element: <AdminDashboardPage />, roles: ['Staff', 'Admin'] },
+  { path: '/admin/calendar', element: <AdminCalendarPage />, roles: ['Staff', 'Admin'] },
+  { path: '/admin/maintenance', element: <AdminMaintenancePage />, roles: ['Staff', 'Admin'] },
   { path: '/admin/bookings', element: <AdminBookingsPage />, roles: ['Staff', 'Admin'] },
   { path: '/admin/bookings/:id/handover', element: <AdminHandoverPage />, roles: ['Staff', 'Admin'] },
   { path: '/admin/returns', element: <AdminReturnPage />, roles: ['Staff', 'Admin'] },

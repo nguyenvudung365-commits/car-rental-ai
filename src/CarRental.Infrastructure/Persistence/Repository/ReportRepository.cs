@@ -17,7 +17,7 @@ public class ReportRepository : IReportRepository
             .Where(p => !p.IsDeleted
                      && (p.Status == PaymentStatus.DaCoc || p.Status == PaymentStatus.DaThanhToan)
                      && p.PaidAt != null && p.PaidAt >= from && p.PaidAt < end)
-            .Select(p => new { p.BookingId, p.Amount, PaidAt = p.PaidAt!.Value })
+            .Select(p => new { p.BookingId, p.Amount, p.Method, PaidAt = p.PaidAt!.Value })
             .ToListAsync();
 
         var byMonth = rows
@@ -32,7 +32,9 @@ public class ReportRepository : IReportRepository
         return new RevenueReportDto(
             rows.Sum(r => r.Amount),
             rows.Select(r => r.BookingId).Distinct().Count(),
-            byMonth);
+            byMonth,
+            rows.GroupBy(r => r.Method).OrderBy(g => g.Key)
+                .Select(g => new RevenueByMethodDto(g.Key, g.Sum(r => r.Amount), g.Count())).ToList());
     }
 
     public async Task<OccupancyReportDto> GetOccupancyAsync(DateTime from, DateTime to)

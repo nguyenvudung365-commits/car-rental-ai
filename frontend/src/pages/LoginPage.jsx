@@ -22,7 +22,6 @@ const LoginPage = () => {
 
   // Nhận thông báo chuyển tiếp từ trang khác (ví dụ: đăng ký thành công)
   const successMessage = location.state?.message || '';
-  const redirectPath = location.state?.from?.pathname || '/';
 
   /**
    * Xử lý gửi biểu mẫu đăng nhập
@@ -43,9 +42,11 @@ const LoginPage = () => {
     try {
       setLoading(true);
       // Gọi API đăng nhập qua AuthContext
-      await login(email.trim(), password);
-      // Đăng nhập thành công -> Điều hướng về trang chủ hoặc trang trước đó
-      navigate(redirectPath, { replace: true });
+      const loggedIn = await login(email.trim(), password);
+      // Đăng nhập thành công -> trang trước đó; Staff/Admin mặc định vào dashboard
+      const role = loggedIn?.Role ?? loggedIn?.role;
+      const isManager = role === 'Staff' || role === 'Admin';
+      navigate(location.state?.from?.pathname || (isManager ? '/admin' : '/'), { replace: true });
     } catch (err) {
       console.error('Lỗi đăng nhập:', err);
       const { status, message } = parseApiError(err);

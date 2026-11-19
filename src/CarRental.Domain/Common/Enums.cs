@@ -176,3 +176,19 @@ public enum ChargeKind
     GiaoNhan = 4,
     MotChieu = 5
 }
+
+/// <summary>Loại lịch bảo trì của xe.</summary>
+public enum MaintenanceType
+{
+    BaoDuong = 1,
+    DangKiem = 2,
+    BaoHiem = 3
+}
+
+public enum MaintenanceStatus
+{
+    KeHoach = 1,
+    DangThucHien = 2,
+    HoanThanh = 3,
+    Huy = 4
+}
