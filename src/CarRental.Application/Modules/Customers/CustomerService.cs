@@ -60,6 +60,9 @@ public class CustomerService : ICustomerService
         if (!_passwordHasher.Verify(request.Password, customer.PasswordHash))
             throw new UnauthorizedException("Email hoặc mật khẩu không đúng.");
 
+        if (customer.IsLocked)
+            throw new ForbiddenException("ACCOUNT_LOCKED", "Tài khoản đã bị khóa. Vui lòng liên hệ cửa hàng.");
+
         var token = _jwtTokenGenerator.GenerateToken(customer);
         return new AuthResponse(token, customer.FullName, customer.Role.ToString());
     }
@@ -84,4 +87,5 @@ public class CustomerService : ICustomerService
         // cần thêm Update(customer) vào ICustomerRepository nếu chưa có
         await _unitOfWork.SaveChangesAsync();
     }
+
 }

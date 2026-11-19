@@ -1,3 +1,4 @@
+using CarRental.API.Authorization;
 using CarRental.Application.Modules.Cars;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,28 +15,34 @@ public class CarsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetFiltered([FromQuery] CarFilterRequest filter)
     {
-        var (items, total) = await _carService.GetFilteredAsync(filter);
+        var (items, total) = await _carService.GetFilteredAsync(filter, includePending: User.IsInRole("Admin") || User.IsInRole("Staff"));
         return Ok(new { items, total });
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<CarDto>> GetById(int id)
     {
-        var car = await _carService.GetByIdAsync(id);
+        var car = await _carService.GetByIdAsync(id, includePending: User.IsInRole("Admin") || User.IsInRole("Staff"));
         return car is null ? NotFound() : Ok(car);
     }
 
-    [Authorize(Roles = "Admin,Staff")]
+    /// <summary>Staff tạo thì xe ở trạng thái ChoDuyet (giá chỉ là đề xuất); Admin tạo thì xe SanSang luôn.</summary>
+    [Authorize(Roles = AppRoles.StaffOrAdmin)]
     [HttpPost]
     public async Task<ActionResult<CarDto>> Create(CreateCarRequest request)
-        => Ok(await _carService.CreateAsync(request));
+        => Ok(await _carService.CreateAsync(request, User.IsInRole(AppRoles.Admin)));
 
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = AppRoles.StaffOrAdmin)]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, UpdateCarRequest request)
-    { await _carService.UpdateAsync(id, request); return NoContent(); }
+    { await _carService.UpdateAsync(id, request, User.IsInRole(AppRoles.Admin)); return NoContent(); }
 
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = AppRoles.Admin)]
+    [HttpPost("{id}/approve")]
+    public async Task<ActionResult<CarDto>> Approve(int id, ApproveCarRequest? request)
+        => Ok(await _carService.ApproveAsync(id, request));
+
+    [Authorize(Roles = AppRoles.Admin)]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     { await _carService.DeleteAsync(id); return NoContent(); }

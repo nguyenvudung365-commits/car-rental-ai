@@ -14,7 +14,9 @@ public enum CarStatus
     SanSang = 1,
     DangThue = 2,
     BaoTri = 3,
-    NgungHoatDong = 4
+    NgungHoatDong = 4,
+    /// <summary>Xe do Staff tạo, chờ Admin xác nhận giá và duyệt; không hiện công khai, không đặt được.</summary>
+    ChoDuyet = 5
 }
 
 /// <summary>Loại xe — dùng để AI dự đoán giá theo phân khúc.</summary>
@@ -70,4 +72,11 @@ public enum PaymentMethod
     ChuyenKhoan = 2,
     TheNoiDia = 3,
     ViDienTu = 4
+}
+
+/// <summary>Mức độ trong danh sách chặn khách.</summary>
+public enum BlacklistLevel
+{
+    CanhBao = 1,
+    Chan = 2
 }

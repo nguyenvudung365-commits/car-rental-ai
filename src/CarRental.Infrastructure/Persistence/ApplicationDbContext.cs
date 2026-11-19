@@ -30,6 +30,9 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
     {
         base.OnModelCreating(modelBuilder);
 
+        // Entity mới từ đợt 1 cấu hình trong Persistence/Configurations (IEntityTypeConfiguration<T>)
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
         modelBuilder.Entity<CustomerEntity>()
             .HasIndex(c => c.Email)
             .IsUnique();

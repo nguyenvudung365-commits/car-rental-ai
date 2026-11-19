@@ -24,5 +24,12 @@ public class Customer : BaseEntity
 
     public string? Address { get; set; }
 
+    /// <summary>Tài khoản bị Admin khóa: không đăng nhập, token cũ bị từ chối.</summary>
+    public bool IsLocked { get; set; }
+
+    public DateTime? LockedAt { get; set; }
+
+    public string? LockReason { get; set; }
+
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 }

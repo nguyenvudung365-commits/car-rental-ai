@@ -23,7 +23,7 @@ public class ExceptionHandlingMiddleware
         }
         catch (ValidationAppException ex)
         {
-            await WriteProblem(context, StatusCodes.Status400BadRequest, ex.Message);
+            await WriteProblem(context, StatusCodes.Status400BadRequest, ex.Message, ex.Code);
         }
         catch (CarRental.Infrastructure.Files.WebpValidationException ex)
         {
@@ -35,7 +35,7 @@ public class ExceptionHandlingMiddleware
         }
         catch (ForbiddenException ex)
         {
-            await WriteProblem(context, StatusCodes.Status403Forbidden, ex.Message);
+            await WriteProblem(context, StatusCodes.Status403Forbidden, ex.Message, ex.Code);
         }
     }
 

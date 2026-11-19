@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { formatCurrency } from '../../utils/formatCurrency';
 import PaymentsModal from '../../components/PaymentsModal';
+import BlacklistBadge from '../../components/BlacklistBadge';
 
 /**
  * Trang Quản lý Đơn thuê (AdminBookingsPage)
@@ -493,7 +494,7 @@ const AdminBookingsPage = () => {
                         #{b.Id}
                       </td>
                       <td style={{ padding: '14px 16px', fontWeight: '500' }}>
-                        {b.CustomerName || 'Khách vãng lai'}
+                        {b.CustomerName || 'Khách vãng lai'}<BlacklistBadge customerId={b.CustomerId} />
                       </td>
                       <td style={{ padding: '14px 16px', fontWeight: '500', color: '#111827' }}>
                         {carTitle}
