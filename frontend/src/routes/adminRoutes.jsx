@@ -9,9 +9,11 @@ import AdminBlacklistPage from '../pages/admin/AdminBlacklistPage';
 import AdminDocumentsPage from '../pages/admin/AdminDocumentsPage';
 import AdminCustomersPage from '../pages/admin/AdminCustomersPage';
 import AdminCustomerDetailPage from '../pages/admin/AdminCustomerDetailPage';
+import AdminHandoverPage from '../pages/admin/AdminHandoverPage';
 
 export const adminRoutes = [
   { path: '/admin/bookings', element: <AdminBookingsPage />, roles: ['Staff', 'Admin'] },
+  { path: '/admin/bookings/:id/handover', element: <AdminHandoverPage />, roles: ['Staff', 'Admin'] },
   { path: '/admin/returns', element: <AdminReturnPage />, roles: ['Staff', 'Admin'] },
   { path: '/admin/cars', element: <AdminCarsPage />, roles: ['Staff', 'Admin'] },
   { path: '/admin/customers', element: <AdminCustomersPage />, roles: ['Staff', 'Admin'] },

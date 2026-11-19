@@ -129,6 +129,183 @@ namespace CarRental.Infrastructure.Migrations
                     b.ToTable("Bookings");
                 });
 
+            modelBuilder.Entity("CarRental.Domain.Modules.Bookings.BookingExtension", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookingId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("ExtraAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("NewEndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("OldEndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RejectReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("RequestedById")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ReviewedById")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_BookingExtensions_BookingId_Pending")
+                        .HasFilter("[Status] = 1");
+
+                    b.ToTable("BookingExtensions", (string)null);
+                });
+
+            modelBuilder.Entity("CarRental.Domain.Modules.Bookings.DepositTransaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("BookingId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Method")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("StaffId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId", "Type")
+                        .IsUnique();
+
+                    b.ToTable("DepositTransactions", (string)null);
+                });
+
+            modelBuilder.Entity("CarRental.Domain.Modules.Bookings.HandoverPhoto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("HandoverRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HandoverRecordId");
+
+                    b.ToTable("HandoverPhotos", (string)null);
+                });
+
+            modelBuilder.Entity("CarRental.Domain.Modules.Bookings.HandoverRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookingId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ConditionNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("FuelLevel")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Odometer")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("StaffId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId", "Type")
+                        .IsUnique();
+
+                    b.ToTable("HandoverRecords", (string)null);
+                });
+
             modelBuilder.Entity("CarRental.Domain.Modules.Bookings.Payment", b =>
                 {
                     b.Property<int>("Id")
@@ -269,6 +446,9 @@ namespace CarRental.Infrastructure.Migrations
 
                     b.Property<int>("Seats")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("SecurityDeposit")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -420,6 +600,7 @@ namespace CarRental.Infrastructure.Migrations
                         .HasColumnType("bit");
 
                     b.Property<int>("LifetimePoints")
+                        .IsConcurrencyToken()
                         .HasColumnType("int");
 
                     b.Property<string>("LockReason")
@@ -429,6 +610,7 @@ namespace CarRental.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<int>("LoyaltyPoints")
+                        .IsConcurrencyToken()
                         .HasColumnType("int");
 
                     b.Property<string>("PasswordHash")
@@ -587,6 +769,50 @@ namespace CarRental.Infrastructure.Migrations
                     b.Navigation("Customer");
                 });
 
+            modelBuilder.Entity("CarRental.Domain.Modules.Bookings.BookingExtension", b =>
+                {
+                    b.HasOne("CarRental.Domain.Modules.Bookings.Booking", "Booking")
+                        .WithMany()
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Booking");
+                });
+
+            modelBuilder.Entity("CarRental.Domain.Modules.Bookings.DepositTransaction", b =>
+                {
+                    b.HasOne("CarRental.Domain.Modules.Bookings.Booking", "Booking")
+                        .WithMany()
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Booking");
+                });
+
+            modelBuilder.Entity("CarRental.Domain.Modules.Bookings.HandoverPhoto", b =>
+                {
+                    b.HasOne("CarRental.Domain.Modules.Bookings.HandoverRecord", "HandoverRecord")
+                        .WithMany("Photos")
+                        .HasForeignKey("HandoverRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("HandoverRecord");
+                });
+
+            modelBuilder.Entity("CarRental.Domain.Modules.Bookings.HandoverRecord", b =>
+                {
+                    b.HasOne("CarRental.Domain.Modules.Bookings.Booking", "Booking")
+                        .WithMany()
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Booking");
+                });
+
             modelBuilder.Entity("CarRental.Domain.Modules.Bookings.Payment", b =>
                 {
                     b.HasOne("CarRental.Domain.Modules.Bookings.Booking", "Booking")
@@ -657,6 +883,11 @@ namespace CarRental.Infrastructure.Migrations
                     b.Navigation("Payments");
 
                     b.Navigation("ReturnRecord");
+                });
+
+            modelBuilder.Entity("CarRental.Domain.Modules.Bookings.HandoverRecord", b =>
+                {
+                    b.Navigation("Photos");
                 });
 
             modelBuilder.Entity("CarRental.Domain.Modules.Cars.Car", b =>

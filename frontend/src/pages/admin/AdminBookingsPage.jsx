@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { formatCurrency } from '../../utils/formatCurrency';
 import PaymentsModal from '../../components/PaymentsModal';
+import ExtendBookingModal from '../../components/ExtendBookingModal';
+import PendingExtensionsPanel from '../../components/PendingExtensionsPanel';
+import { useNavigate } from 'react-router-dom';
 import BlacklistBadge from '../../components/BlacklistBadge';
 
 /**
@@ -25,6 +28,8 @@ const AdminBookingsPage = () => {
 
   // Trạng thái Modal Hủy đơn
   const [paymentBooking, setPaymentBooking] = useState(null);
+  const [extendBooking, setExtendBooking] = useState(null);
+  const navigate = useNavigate();
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelBooking, setCancelBooking] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -99,22 +104,8 @@ const AdminBookingsPage = () => {
    * Giao xe cho khách: DaXacNhan -> DangThue
    * API Endpoint: POST /bookings/:id/pickup
    */
-  const handlePickup = async (booking) => {
-    if (!window.confirm(`Xác nhận giao xe cho đơn #${booking.Id}?`)) return;
-    try {
-      setActionLoading(true);
-      await axiosClient.post(`/bookings/${booking.Id}/pickup`);
-      setNotification({ type: 'success', message: `Đã giao xe cho đơn #${booking.Id}.` });
-      await fetchBookings();
-    } catch (err) {
-      setNotification({
-        type: 'error',
-        message: err.response?.data?.message || `Không thể giao xe cho đơn #${booking.Id}.`,
-      });
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  // Giao xe cần biên bản bàn giao (và cọc nếu có): chuyển sang trang bàn giao.
+  const handlePickup = (booking) => navigate(`/admin/bookings/${booking.Id}/handover?type=giao`);
 
   /**
    * Tải hợp đồng PDF (cần JWT nên tải qua axios dạng blob)
@@ -278,6 +269,8 @@ const AdminBookingsPage = () => {
           Xem danh sách đơn đặt xe, duyệt đơn chờ duyệt, hủy đơn và điều chỉnh giá thuê.
         </p>
       </div>
+
+      <PendingExtensionsPanel onChanged={fetchBookings} />
 
       {/* Thông báo Alert */}
       {notification && (
@@ -566,6 +559,17 @@ const AdminBookingsPage = () => {
                             </button>
                           )}
 
+                          {(b.Status === 'DaXacNhan' || b.Status === 'DangThue') && (
+                            <button
+                              type="button"
+                              onClick={() => setExtendBooking(b)}
+                              title="Gia hạn"
+                              style={{ padding: '6px 10px', backgroundColor: '#7c3aed', color: '#ffffff', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer' }}
+                            >
+                              Gia hạn
+                            </button>
+                          )}
+
                           {b.Status !== 'ChoXacNhan' && b.Status !== 'DaHuy' && (
                             <button
                               type="button"
@@ -771,6 +775,9 @@ const AdminBookingsPage = () => {
         </div>
       )}
 
+      {extendBooking && (
+        <ExtendBookingModal booking={extendBooking} onClose={() => setExtendBooking(null)} onChanged={fetchBookings} />
+      )}
       {paymentBooking && (
         <PaymentsModal booking={paymentBooking} canMarkPaid onClose={() => setPaymentBooking(null)} />
       )}

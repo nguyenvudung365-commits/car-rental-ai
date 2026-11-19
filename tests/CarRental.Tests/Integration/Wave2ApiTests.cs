@@ -86,6 +86,20 @@ public sealed class Wave2ApiTests : IClassFixture<ApiFixture>
         return b.Id;
     }
 
+    // Luật đợt 3: nhận xe cần biên bản Giao, trả xe cần biên bản Nhan.
+    private async Task GiveHandover(HttpClient staff, int bookingId, HandoverType type, int odo = 1000)
+    {
+        var r = await staff.PostAsJsonAsync($"/api/bookings/{bookingId}/handovers", new { Type = (int)type, Odometer = odo, FuelLevel = 80, ConditionNote = "ok" });
+        Assert.Equal(HttpStatusCode.Created, r.StatusCode);
+    }
+
+    private async Task SeedGiaoRecord(int bookingId)
+    {
+        await using var db = _fx.NewContext();
+        db.Set<HandoverRecord>().Add(new HandoverRecord { BookingId = bookingId, Type = HandoverType.Giao, Odometer = 1000, FuelLevel = 80 });
+        await db.SaveChangesAsync();
+    }
+
     // ---------- /api/auth/me và hồ sơ ----------
 
     [LocalDbFact]
@@ -356,6 +370,8 @@ public sealed class Wave2ApiTests : IClassFixture<ApiFixture>
         var car = await _fx.SeedCar(CarStatus.DangThue);
         var bk = await SeedBooking(u.Id, car, BookingStatus.DangThue, -3, 0);
         var staff = await _fx.As(UserRole.Staff);
+        await SeedGiaoRecord(bk);
+        await GiveHandover(staff, bk, HandoverType.Nhan);
 
         var ret = await staff.PostAsJsonAsync($"/api/bookings/{bk}/return", new { ReturnedAt = DateTime.UtcNow.Date, DamageFee = 0 });
         Assert.Equal(HttpStatusCode.OK, ret.StatusCode);
@@ -381,6 +397,8 @@ public sealed class Wave2ApiTests : IClassFixture<ApiFixture>
         var car = await _fx.SeedCar(CarStatus.DangThue);
         var bk = await SeedBooking(u.Id, car, BookingStatus.DangThue, -3, -1);    // hết hạn hôm qua, trả hôm nay: trễ 1 ngày (700k) + hư hại 300k
         var staff = await _fx.As(UserRole.Staff);
+        await SeedGiaoRecord(bk);
+        await GiveHandover(staff, bk, HandoverType.Nhan);
         var ret = await staff.PostAsJsonAsync($"/api/bookings/{bk}/return", new { ReturnedAt = DateTime.UtcNow.Date, DamageFee = 300_000 });
         var final = (await Json(ret)).GetProperty("FinalAmount").GetDecimal();
         Assert.Equal(2_100_000m + 700_000m + 300_000m, final);
@@ -418,6 +436,7 @@ public sealed class Wave2ApiTests : IClassFixture<ApiFixture>
         await AssertBlocked(await Setup(id => SeedApprovedDocs(id, licenseExpiry: DateTime.UtcNow.Date.AddDays(2))));  // bằng lái hết hạn trước EndDate (+3)
 
         var ok = await Setup(id => SeedApprovedDocs(id, licenseExpiry: DateTime.UtcNow.Date.AddDays(3)));             // hết hạn đúng ngày trả: được
+        await GiveHandover(staff, ok.Booking, HandoverType.Giao);
         Assert.Equal(HttpStatusCode.OK, (await staff.PostAsync($"/api/bookings/{ok.Booking}/pickup", null)).StatusCode);
     }
 

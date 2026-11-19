@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { formatCurrency } from '../../utils/formatCurrency';
+import HandoverForm from '../../components/HandoverForm';
+import DepositPanel from '../../components/DepositPanel';
 
 /**
  * Trang Xử lý Trả xe (AdminReturnPage)
@@ -16,12 +18,14 @@ import { formatCurrency } from '../../utils/formatCurrency';
  */
 const AdminReturnPage = () => {
   // Trạng thái Form
-  const [bookingId, setBookingId] = useState('');
-  const [returnDate, setReturnDate] = useState(() => {
-    // Mặc định ngày hôm nay định dạng YYYY-MM-DD
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  });
+  const [bookingId, setBookingId] = useState(() => new URLSearchParams(window.location.search).get('bookingId') || '');
+  // Giờ cục bộ dạng YYYY-MM-DDTHH:mm cho input datetime-local.
+  const nowLocal = () => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  };
+  const [returnDate, setReturnDate] = useState(nowLocal);
   const [damageFee, setDamageFee] = useState('0');
   const [notes, setNotes] = useState('');
 
@@ -105,7 +109,7 @@ const AdminReturnPage = () => {
         return;
       }
       const response = await axiosClient.post(`/bookings/${cleanId}/return`, {
-        returnedAt: returnDate,
+        returnedAt: new Date(returnDate).toISOString(),
         damageFee: fee,
         damageNote: notes.trim() || null,
       });
@@ -129,8 +133,7 @@ const AdminReturnPage = () => {
   // Đặt lại form để xử lý đơn khác
   const handleResetForm = () => {
     setBookingId('');
-    const today = new Date();
-    setReturnDate(today.toISOString().split('T')[0]);
+    setReturnDate(nowLocal());
     setDamageFee('0');
     setNotes('');
     setResult(null);
@@ -310,6 +313,20 @@ const AdminReturnPage = () => {
         </div>
       )}
 
+      {/* Đợt 3: biên bản nhận xe (bắt buộc trước khi trả) và quyết toán cọc sau khi trả */}
+      {bookingId && !result && (
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '28px', marginBottom: '20px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }}>
+          <h3 style={{ marginTop: 0 }}>Biên bản nhận xe - đơn #{bookingId}</h3>
+          <HandoverForm bookingId={bookingId} type="Nhan" />
+        </div>
+      )}
+      {result && bookingId && (
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '28px', marginBottom: '20px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }}>
+          <h3 style={{ marginTop: 0 }}>Tiền cọc</h3>
+          <DepositPanel booking={{ Id: Number(bookingId), Status: 'DaTraXe' }} canManage />
+        </div>
+      )}
+
       {/* Biểu mẫu trả xe */}
       <div
         style={{
@@ -429,11 +446,11 @@ const AdminReturnPage = () => {
               htmlFor="returnDateInput"
               style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: '600', color: '#374151' }}
             >
-              Ngày trả xe thực tế <span style={{ color: '#dc2626' }}>*</span>
+              Thời điểm trả xe thực tế <span style={{ color: '#dc2626' }}>*</span>
             </label>
             <input
               id="returnDateInput"
-              type="date"
+              type="datetime-local"
               required
               value={returnDate}
               onChange={(e) => setReturnDate(e.target.value)}

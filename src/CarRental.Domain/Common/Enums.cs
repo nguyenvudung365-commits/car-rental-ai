@@ -71,7 +71,32 @@ public enum PaymentMethod
     TienMat = 1,
     ChuyenKhoan = 2,
     TheNoiDia = 3,
-    ViDienTu = 4
+    ViDienTu = 4,
+    /// <summary>Khoản trừ từ tiền cọc bảo đảm. Dùng 6 (không dùng 5) để tránh trùng giá trị Năng có thể đã dùng cho thanh toán online.</summary>
+    TruCoc = 6
+}
+
+/// <summary>Loại biên bản bàn giao xe.</summary>
+public enum HandoverType
+{
+    Giao = 1,
+    Nhan = 2
+}
+
+/// <summary>Loại giao dịch tiền cọc bảo đảm (không phải doanh thu).</summary>
+public enum DepositTxType
+{
+    Thu = 1,
+    KhauTru = 2,
+    Hoan = 3
+}
+
+/// <summary>Trạng thái yêu cầu gia hạn thuê.</summary>
+public enum ExtensionStatus
+{
+    ChoDuyet = 1,
+    DaDuyet = 2,
+    TuChoi = 3
 }
 
 /// <summary>Mức độ trong danh sách chặn khách.</summary>

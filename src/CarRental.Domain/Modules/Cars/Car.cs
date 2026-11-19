@@ -40,6 +40,9 @@ public class Car : BaseEntity
 
     public string? Description { get; set; }
 
+    /// <summary>Tiền cọc bảo đảm khi nhận xe (0 = không thu cọc). Chỉ Admin đổi.</summary>
+    public decimal SecurityDeposit { get; set; }
+
     public ICollection<CarImage> Images { get; set; } = new List<CarImage>();
 
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();

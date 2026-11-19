@@ -39,6 +39,8 @@ public class CarService : ICarService
 
     public async Task<CarDto> CreateAsync(CreateCarRequest request, bool isAdmin)
     {
+        if (!isAdmin && request.SecurityDeposit is > 0)
+            throw new ForbiddenException("PRICE_ADMIN_ONLY", "Chỉ quản trị viên được đặt tiền cọc xe.");
         if (await _carRepository.GetByLicensePlateAsync(request.LicensePlate) is not null)
             throw new ConflictException("PLATE_EXISTS", $"Biển số '{request.LicensePlate}' đã tồn tại."); // PLATE_EXISTS
 
@@ -55,6 +57,7 @@ public class CarService : ICarService
             Transmission = request.Transmission,
             FuelType = request.FuelType,
             ManufactureYear = request.ManufactureYear,
+            SecurityDeposit = request.SecurityDeposit ?? 0,
             Status = isAdmin ? CarStatus.SanSang : CarStatus.ChoDuyet
         };
 
@@ -72,6 +75,8 @@ public class CarService : ICarService
         {
             if (request.BasePricePerDay != car.BasePricePerDay || request.OverridePrice != car.OverridePrice)
                 throw new ForbiddenException("PRICE_ADMIN_ONLY", "Chỉ quản trị viên được đổi giá xe.");
+            if (request.SecurityDeposit.HasValue && request.SecurityDeposit != car.SecurityDeposit)
+                throw new ForbiddenException("PRICE_ADMIN_ONLY", "Chỉ quản trị viên được đổi tiền cọc xe.");
             // Duyệt xe phải qua Admin: Staff không được đưa xe ra/vào trạng thái ChoDuyet.
             if ((request.Status == CarStatus.ChoDuyet) != (car.Status == CarStatus.ChoDuyet))
                 throw new ForbiddenException("CAR_APPROVAL_ADMIN_ONLY", "Chỉ quản trị viên được duyệt xe.");
@@ -94,6 +99,7 @@ public class CarService : ICarService
         car.Transmission = request.Transmission;
         car.FuelType = request.FuelType;
         car.ManufactureYear = request.ManufactureYear;
+        if (request.SecurityDeposit.HasValue) car.SecurityDeposit = request.SecurityDeposit.Value;
 
         _carRepository.Update(car);
         await _unitOfWork.SaveChangesAsync();
@@ -186,5 +192,5 @@ public class CarService : ICarService
         car.Id, car.CarType, car.Brand, car.Model, car.LicensePlate, car.Seats, car.CarAgeYears,
         car.BasePricePerDay, car.Status, car.OverridePrice, car.Description,
         car.Images.Select(i => new CarImageDto(i.Id, i.ImageUrl, i.IsPrimary)).ToList(),
-        car.Transmission, car.FuelType, car.ManufactureYear);
+        car.Transmission, car.FuelType, car.ManufactureYear, car.SecurityDeposit);
 }
