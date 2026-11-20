@@ -30,6 +30,9 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
     {
         base.OnModelCreating(modelBuilder);
 
+        // Entity mới từ đợt 1 cấu hình trong Persistence/Configurations (IEntityTypeConfiguration<T>)
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
         modelBuilder.Entity<CustomerEntity>()
             .HasIndex(c => c.Email)
             .IsUnique();
@@ -37,6 +40,14 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
         modelBuilder.Entity<CustomerEntity>()
             .HasIndex(c => c.PhoneNumber)
             .IsUnique();
+
+        modelBuilder.Entity<CustomerEntity>()
+            .Property(c => c.AvatarKey)
+            .HasMaxLength(300);
+
+        // Chống mất cập nhật điểm khi ghi đồng thời (LoyaltyService thử lại khi xung đột).
+        modelBuilder.Entity<CustomerEntity>().Property(c => c.LoyaltyPoints).IsConcurrencyToken();
+        modelBuilder.Entity<CustomerEntity>().Property(c => c.LifetimePoints).IsConcurrencyToken();
 
         modelBuilder.Entity<CarEntity>()
             .HasIndex(c => c.LicensePlate)

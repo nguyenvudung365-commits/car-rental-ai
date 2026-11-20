@@ -41,7 +41,7 @@ public class ReportRepository : IReportRepository
         var totalDays = (end - from).Days;
 
         var cars = await _context.Cars
-            .Where(c => !c.IsDeleted && c.Status != CarStatus.NgungHoatDong)
+            .Where(c => !c.IsDeleted && c.Status != CarStatus.NgungHoatDong && c.Status != CarStatus.ChoDuyet)
             .OrderBy(c => c.Id)
             .Select(c => new { c.Id, c.LicensePlate })
             .ToListAsync();

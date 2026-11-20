@@ -3,6 +3,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiMenu, FiX, FiTruck } from 'react-icons/fi';
 import useAuth from '../auth/AuthContext';
 import { roleLabel } from '../utils/roleLabels';
+import { NAV_ITEMS } from '../utils/permissions';
+import TierBadge from './TierBadge';
 
 /**
  * Navbar - Thanh điều hướng chính của ứng dụng
@@ -10,7 +12,7 @@ import { roleLabel } from '../utils/roleLabels';
  */
 const Navbar = () => {
   const auth = useAuth?.() || {};
-  const { user, token, logout } = auth;
+  const { user, token, logout, profile } = auth;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -22,7 +24,6 @@ const Navbar = () => {
   const isAuthenticated = Boolean(auth.isAuthenticated ?? (user || token));
   const isStaff = role === 'Staff';
   const isManager = role === 'Admin' || isStaff;
-  const isAdmin = role === 'Admin';
 
   // Xử lý đăng xuất người dùng
   const handleLogout = async () => {
@@ -93,36 +94,16 @@ const Navbar = () => {
             {/* Menu quản lý: Admin và Staff */}
             {isAuthenticated && isManager && (
               <>
-                <Link
-                  to="/admin/bookings"
-                  className={`navbar-link ${isActive('/admin/bookings') ? 'active' : ''}`}
-                  onClick={closeMenu}
-                >
-                  Quản lý đơn
-                </Link>
-                <Link
-                  to="/admin/returns"
-                  className={`navbar-link ${isActive('/admin/returns') ? 'active' : ''}`}
-                  onClick={closeMenu}
-                >
-                  Trả xe
-                </Link>
-                <Link
-                  to="/admin/cars"
-                  className={`navbar-link ${isActive('/admin/cars') ? 'active' : ''}`}
-                  onClick={closeMenu}
-                >
-                  Quản lý xe
-                </Link>
-                {isAdmin && (
+                {NAV_ITEMS.filter((i) => i.roles.includes(role)).map((i) => (
                   <Link
-                    to="/admin/reports"
-                    className={`navbar-link ${isActive('/admin/reports') ? 'active' : ''}`}
+                    key={i.to}
+                    to={i.to}
+                    className={`navbar-link ${isActive(i.to) ? 'active' : ''}`}
                     onClick={closeMenu}
                   >
-                    Báo cáo
+                    {i.label}
                   </Link>
-                )}
+                ))}
               </>
             )}
           </div>

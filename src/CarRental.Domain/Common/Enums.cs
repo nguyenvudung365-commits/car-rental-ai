@@ -14,7 +14,9 @@ public enum CarStatus
     SanSang = 1,
     DangThue = 2,
     BaoTri = 3,
-    NgungHoatDong = 4
+    NgungHoatDong = 4,
+    /// <summary>Xe do Staff tạo, chờ Admin xác nhận giá và duyệt; không hiện công khai, không đặt được.</summary>
+    ChoDuyet = 5
 }
 
 /// <summary>Loại xe — dùng để AI dự đoán giá theo phân khúc.</summary>
@@ -70,4 +72,51 @@ public enum PaymentMethod
     ChuyenKhoan = 2,
     TheNoiDia = 3,
     ViDienTu = 4
+}
+
+/// <summary>Mức độ trong danh sách chặn khách.</summary>
+public enum BlacklistLevel
+{
+    CanhBao = 1,
+    Chan = 2
+}
+
+/// <summary>Loại giấy tờ khách nộp để xác minh.</summary>
+public enum DocumentType
+{
+    Cccd = 1,
+    BangLai = 2
+}
+
+/// <summary>Trạng thái duyệt một giấy tờ.</summary>
+public enum DocumentStatus
+{
+    ChoDuyet = 1,
+    DaDuyet = 2,
+    TuChoi = 3
+}
+
+/// <summary>Tình trạng giấy tờ tổng hợp của khách: DaDuyet khi cả CCCD và bằng lái đã duyệt.</summary>
+public enum DocumentsOverallStatus
+{
+    ChuaNop = 1,
+    ChoDuyet = 2,
+    TuChoi = 3,
+    DaDuyet = 4
+}
+
+/// <summary>Hạng thành viên theo tổng điểm tích lũy trọn đời.</summary>
+public enum MemberTier
+{
+    ThanhVien = 1,
+    Bac = 2,
+    Vang = 3,
+    KimCuong = 4
+}
+
+/// <summary>Lý do thay đổi điểm thưởng.</summary>
+public enum LoyaltyReason
+{
+    TichDiem = 1,
+    DieuChinh = 2
 }

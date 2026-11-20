@@ -50,6 +50,9 @@ public record UpdateCarRequest(
     FuelType? FuelType = null,
     [Range(1990, 2100)] int? ManufactureYear = null);
 
+/// <summary>Admin duyệt xe chờ duyệt; có thể kèm đặt/sửa giá (bỏ trống thì giữ giá Staff đề xuất).</summary>
+public record ApproveCarRequest(decimal? BasePricePerDay = null, decimal? OverridePrice = null);
+
 public record CarFilterRequest(
     CarType? CarType,
     decimal? MinPrice,
@@ -58,4 +61,5 @@ public record CarFilterRequest(
     int Page = 1,
     int PageSize = 10,
     DateTime? AvailableFrom = null,
-    DateTime? AvailableTo = null);
+    DateTime? AvailableTo = null,
+    bool IncludePending = false);

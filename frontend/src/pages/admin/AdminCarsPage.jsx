@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { carTypeLabel, carStatusLabel, normalizeCarType, normalizeCarStatus, normalizeTransmission, normalizeFuelType, TRANSMISSIONS, FUEL_TYPES, transmissionLabel, fuelLabel } from '../../utils/carLabels';
 import CarImagesManager from '../../components/CarImagesManager';
+import useAuth from '../../auth/AuthContext';
 
 /**
  * Trang Quản lý xe cho Admin/Staff (CRAI-36)
@@ -11,7 +12,7 @@ import CarImagesManager from '../../components/CarImagesManager';
  * - Xóa xe: DELETE /cars/:id (backend chặn xóa xe đang thuê)
  */
 const CAR_TYPES = { Sedan: 1, SUV: 2, Hatchback: 3, MPV: 4, Pickup: 5, Luxury: 6 };
-const CAR_STATUSES = { SanSang: 1, DangThue: 2, BaoTri: 3, NgungHoatDong: 4 };
+const CAR_STATUSES = { SanSang: 1, DangThue: 2, BaoTri: 3, NgungHoatDong: 4, ChoDuyet: 5 };
 
 const EMPTY_FORM = {
   carType: 'Sedan',
@@ -21,6 +22,7 @@ const EMPTY_FORM = {
   seats: 4,
   carAgeYears: 0,
   basePricePerDay: '',
+  overridePrice: '',
   status: 'SanSang',
   description: '',
   transmission: '',
@@ -34,6 +36,7 @@ const th = { textAlign: 'left', padding: '10px', borderBottom: '1px solid #e5e7e
 const td = { padding: '10px', borderBottom: '1px solid #f3f4f6', fontSize: '0.92rem' };
 
 const AdminCarsPage = () => {
+  const isAdmin = useAuth?.()?.user?.role === 'Admin';
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -91,6 +94,7 @@ const AdminCarsPage = () => {
       seats: car.Seats ?? car.seats ?? 4,
       carAgeYears: car.CarAgeYears ?? car.carAgeYears ?? 0,
       basePricePerDay: car.BasePricePerDay ?? car.basePricePerDay ?? '',
+      overridePrice: car.OverridePrice ?? car.overridePrice ?? '',
       status: normalizeCarStatus(car.Status ?? car.status) || 'SanSang',
       description: car.Description ?? car.description ?? '',
       transmission: normalizeTransmission(car.Transmission ?? car.transmission),
@@ -161,16 +165,22 @@ const AdminCarsPage = () => {
       setSaving(true);
       setError(null);
       if (editingId) {
-        await axiosClient.put(`/cars/${editingId}`, { ...body, Status: CAR_STATUSES[form.status] });
+        await axiosClient.put(`/cars/${editingId}`, {
+          ...body,
+          OverridePrice: form.overridePrice === '' || form.overridePrice == null ? null : Number(form.overridePrice),
+          Status: CAR_STATUSES[form.status],
+        });
       } else {
         await axiosClient.post('/cars', body);
       }
-      setNotification(editingId ? 'Đã cập nhật xe.' : 'Đã thêm xe mới.');
+      setNotification(editingId ? 'Đã cập nhật xe.' : isAdmin ? 'Đã thêm xe mới.' : 'Đã gửi xe mới, đang chờ Admin duyệt.');
       closeForm();
       await fetchCars();
     } catch (err) {
       console.error('Lỗi khi lưu xe:', err);
-      if (err.response?.data?.code === 'PLATE_EXISTS') {
+      if (err.response?.status === 403) {
+        setError(apiMessage(err, 'Bạn không có quyền thực hiện thao tác này.'));
+      } else if (err.response?.data?.code === 'PLATE_EXISTS') {
         setFieldErrors({ licensePlate: apiMessage(err, 'Biển số đã tồn tại.') });
       } else {
         setError(apiMessage(err, 'Không thể lưu xe. Vui lòng thử lại.'));
@@ -195,6 +205,22 @@ const AdminCarsPage = () => {
     }
   };
 
+  const handleApprove = async (car) => {
+    const id = car.Id ?? car.id;
+    const input = window.prompt('Giá thuê gốc / ngày (VNĐ) - để trống để giữ giá đề xuất:', '');
+    if (input === null) return;
+    const price = input.trim() === '' ? null : Number(input);
+    if (price !== null && !(price > 0)) { setError('Giá không hợp lệ.'); return; }
+    try {
+      setError(null);
+      await axiosClient.post(`/cars/${id}/approve`, price === null ? {} : { BasePricePerDay: price });
+      setNotification('Đã duyệt xe.');
+      await fetchCars();
+    } catch (err) {
+      setError(apiMessage(err, 'Không thể duyệt xe.'));
+    }
+  };
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
@@ -202,10 +228,12 @@ const AdminCarsPage = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#111827', margin: 0 }}>Quản Lý Xe</h1>
-          <p style={{ color: '#6b7280', marginTop: '6px', fontSize: '0.95rem' }}>Thêm, sửa và xóa xe trong hệ thống.</p>
+          <p style={{ color: '#6b7280', marginTop: '6px', fontSize: '0.95rem' }}>{isAdmin ? 'Thêm, sửa, duyệt và xóa xe trong hệ thống.' : 'Thêm và sửa xe. Xe mới sẽ ở trạng thái Chờ duyệt cho đến khi Admin duyệt.'}</p>
         </div>
         {!showForm && (
-          <button type="button" className="btn btn-primary" onClick={openCreate}>+ Thêm xe</button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button type="button" className="btn btn-primary" onClick={openCreate}>+ Thêm xe</button>
+          </div>
         )}
       </div>
 
@@ -249,10 +277,15 @@ const AdminCarsPage = () => {
               <input style={inputStyle('carAgeYears')} type="number" min="0" max="50" value={form.carAgeYears} onChange={setField('carAgeYears')} onBlur={blurField('carAgeYears')} />
               {fieldError('carAgeYears')}
             </label>
-            <label>Giá thuê gốc / ngày (VNĐ)
-              <input style={inputStyle('basePricePerDay')} type="number" min="1" value={form.basePricePerDay} onChange={setField('basePricePerDay')} onBlur={blurField('basePricePerDay')} required />
+            <label>{isAdmin || !editingId ? 'Giá thuê gốc / ngày (VNĐ)' : 'Giá thuê gốc / ngày (chỉ Admin sửa)'}{!isAdmin && !editingId ? ' - giá đề xuất' : ''}
+              <input style={inputStyle('basePricePerDay')} type="number" min="1" value={form.basePricePerDay} onChange={setField('basePricePerDay')} onBlur={blurField('basePricePerDay')} required readOnly={!isAdmin && Boolean(editingId)} />
               {fieldError('basePricePerDay')}
             </label>
+            {editingId && (
+              <label>Giá ghi đè / ngày (VNĐ){isAdmin ? '' : ' (chỉ Admin sửa)'}
+                <input style={input} type="number" min="1" value={form.overridePrice ?? ''} onChange={setField('overridePrice')} readOnly={!isAdmin} placeholder="Để trống = dùng giá gốc" />
+              </label>
+            )}
             <label>Hộp số
               <select style={input} value={form.transmission} onChange={setField('transmission')}>
                 <option value="">— Chưa rõ —</option>
@@ -271,8 +304,8 @@ const AdminCarsPage = () => {
             </label>
             {editingId && (
               <label>Trạng thái
-                <select style={input} value={form.status} onChange={setField('status')}>
-                  {Object.keys(CAR_STATUSES).map((k) => <option key={k} value={k}>{carStatusLabel(k)}</option>)}
+                <select style={input} value={form.status} onChange={setField('status')} disabled={form.status === 'ChoDuyet'}>
+                  {Object.keys(CAR_STATUSES).filter((k) => k !== 'ChoDuyet' || form.status === 'ChoDuyet').map((k) => <option key={k} value={k}>{carStatusLabel(k)}</option>)}
                 </select>
               </label>
             )}
@@ -316,10 +349,17 @@ const AdminCarsPage = () => {
                     <td style={td}>{carTypeLabel(car.CarType ?? car.carType)}</td>
                     <td style={td}>{car.Seats ?? car.seats}</td>
                     <td style={td}>{Number(car.BasePricePerDay ?? car.basePricePerDay).toLocaleString('vi-VN')}đ</td>
-                    <td style={td}>{carStatusLabel(car.Status ?? car.status)}</td>
+                    <td style={td}>
+                      {normalizeCarStatus(car.Status ?? car.status) === 'ChoDuyet'
+                        ? <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: 999, fontSize: '0.8rem' }}>{carStatusLabel(car.Status ?? car.status)}</span>
+                        : carStatusLabel(car.Status ?? car.status)}
+                    </td>
                     <td style={{ ...td, whiteSpace: 'nowrap' }}>
-                      <button type="button" className="btn" onClick={() => openEdit(car)}>Sửa</button>{' '}
-                      <button type="button" className="btn" onClick={() => handleDelete(car)} style={{ color: '#b91c1c' }}>Xóa</button>
+                      {isAdmin && normalizeCarStatus(car.Status ?? car.status) === 'ChoDuyet' && (
+                        <><button type="button" className="btn btn-primary" onClick={() => handleApprove(car)}>Duyệt</button>{' '}</>
+                      )}
+                      <button type="button" className="btn" onClick={() => openEdit(car)}>Sửa</button>
+                      {isAdmin && <>{' '}<button type="button" className="btn" onClick={() => handleDelete(car)} style={{ color: '#b91c1c' }}>Xóa</button></>}
                     </td>
                   </tr>
                 );

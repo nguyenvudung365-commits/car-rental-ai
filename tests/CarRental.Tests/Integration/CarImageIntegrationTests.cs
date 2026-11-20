@@ -115,5 +115,6 @@ public sealed class CarImageIntegrationTests : IAsyncLifetime
         public List<string> Deleted { get; } = new();
         public Task<string> SaveAsync(IFormFile file, string folder) => Task.FromResult("cars/new.webp");
         public void Delete(string relativePath) => Deleted.Add(relativePath);
+        public Task<(Stream Content, string ContentType)> OpenReadAsync(string key) => throw new NotSupportedException();
     }
 }
