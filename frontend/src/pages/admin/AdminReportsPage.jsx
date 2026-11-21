@@ -50,7 +50,17 @@ const AdminReportsPage = () => {
           to: toDate || undefined,
         },
       });
-      setRevenueData(response.data);
+      // API trả PascalCase (TotalRevenue, ByMonth...); chuẩn hóa về camelCase cho phần hiển thị.
+      const d = response.data || {};
+      setRevenueData({
+        totalRevenue: d.totalRevenue ?? d.TotalRevenue ?? 0,
+        totalBookings: d.totalBookings ?? d.TotalBookings ?? 0,
+        byMonth: (d.byMonth ?? d.ByMonth ?? []).map((m) => ({
+          month: m.month ?? m.Month,
+          revenue: m.revenue ?? m.Revenue ?? 0,
+          bookings: m.bookings ?? m.Bookings ?? 0,
+        })),
+      });
     } catch (err) {
       console.error('Lỗi khi tải báo cáo doanh thu:', err);
       setError(err.response?.data?.message || 'Không thể tải dữ liệu báo cáo doanh thu.');
@@ -73,7 +83,12 @@ const AdminReportsPage = () => {
           to: toDate || undefined,
         },
       });
-      setOccupancyData(response.data);
+      const d = response.data || {};
+      setOccupancyData({
+        totalCars: d.totalCars ?? d.TotalCars ?? 0,
+        avgOccupancyRate: d.avgOccupancyRate ?? d.AvgOccupancyRate ?? 0,
+        byCar: d.byCar ?? d.ByCar ?? [],
+      });
     } catch (err) {
       console.error('Lỗi khi tải báo cáo tỷ lệ lấp đầy:', err);
       setError(err.response?.data?.message || 'Không thể tải dữ liệu báo cáo tỷ lệ lấp đầy.');

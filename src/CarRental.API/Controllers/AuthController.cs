@@ -20,13 +20,32 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
         => Ok(await _customerService.LoginAsync(request));
 
+    private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+        ?? User.FindFirst("sub")!.Value);
+
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<ActionResult<ProfileDto>> GetProfile()
+        => Ok(await _customerService.GetProfileAsync(CurrentUserId));
+
     [Authorize]
     [HttpPut("me")]
     public async Task<IActionResult> UpdateProfile(UpdateProfileRequest request)
     {
-        var customerId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-            ?? User.FindFirst("sub")!.Value);
-        await _customerService.UpdateProfileAsync(customerId, request);
+        await _customerService.UpdateProfileAsync(CurrentUserId, request);
         return NoContent();
     }
+
+    [Authorize]
+    [HttpPost("me/password")]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
+    {
+        await _customerService.ChangePasswordAsync(CurrentUserId, request);
+        return NoContent();
+    }
+
+    [Authorize]
+    [HttpPost("me/avatar")]
+    public async Task<ActionResult<AvatarDto>> UploadAvatar(IFormFile file)
+        => Ok(await _customerService.UpdateAvatarAsync(CurrentUserId, file));
 }

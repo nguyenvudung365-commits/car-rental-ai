@@ -6,19 +6,17 @@ import Layout from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
 
 // Các trang Khách hàng & Công khai
+import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CarListPage from './pages/CarListPage';
 import CarDetailPage from './pages/CarDetailPage';
 import BookingPage from './pages/BookingPage';
 import MyBookingsPage from './pages/MyBookingsPage';
+import ProfilePage from './pages/ProfilePage';
 
 // Các trang Quản trị viên (Admin)
-import AdminBookingsPage from './pages/admin/AdminBookingsPage';
-import AdminReturnPage from './pages/admin/AdminReturnPage';
-import AdminCarsPage from './pages/admin/AdminCarsPage';
-import AdminCarImagesPage from './pages/admin/AdminCarImagesPage';
-import AdminReportsPage from './pages/admin/AdminReportsPage';
+import { adminRoutes } from './routes/adminRoutes';
 
 /**
  * Component định tuyến chính (App Router) của hệ thống Thuê Xe Car Rental AI.
@@ -31,7 +29,7 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             {/* Public Routes - Khách vãng lai và mọi người dùng */}
-            <Route path="/" element={<Navigate to="/cars" replace />} />
+            <Route path="/" element={<HomePage />} />
             <Route path="/cars" element={<CarListPage />} />
             <Route path="/cars/:id" element={<CarDetailPage />} />
             <Route path="/login" element={<LoginPage />} />
@@ -41,21 +39,20 @@ function App() {
             <Route element={<PrivateRoute roles={['Customer', 'Staff', 'Admin']} />}>
               <Route path="/booking/:carId" element={<BookingPage />} />
               <Route path="/my-bookings" element={<MyBookingsPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Route>
 
             {/* Admin Routes - Chỉ dành riêng cho quyền quản trị viên Admin */}
-            <Route element={<PrivateRoute roles={['Staff', 'Admin']} />}>
-              <Route path="/admin/bookings" element={<AdminBookingsPage />} />
-              <Route path="/admin/returns" element={<AdminReturnPage />} />
-              <Route path="/admin/cars" element={<AdminCarsPage />} />
-              <Route path="/admin/car-images" element={<AdminCarImagesPage />} />
-            </Route>
-            <Route element={<PrivateRoute roles={['Admin']} />}>
-              <Route path="/admin/reports" element={<AdminReportsPage />} />
-            </Route>
+            {[['Staff', 'Admin'], ['Admin']].map((roles) => (
+              <Route key={roles.join()} element={<PrivateRoute roles={roles} />}>
+                {adminRoutes
+                  .filter((r) => r.roles.join() === roles.join())
+                  .map((r) => <Route key={r.path} path={r.path} element={r.element} />)}
+              </Route>
+            ))}
 
             {/* Bắt tất cả các đường dẫn không hợp lệ -> Chuyển hướng về danh sách xe */}
-            <Route path="*" element={<Navigate to="/cars" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
       </BrowserRouter>

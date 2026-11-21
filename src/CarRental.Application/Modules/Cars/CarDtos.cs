@@ -15,7 +15,11 @@ public record CarDto(
     CarStatus Status,
     decimal? OverridePrice,
     string? Description,
-    List<CarImageDto> Images);
+    List<CarImageDto> Images,
+    Transmission? Transmission = null,
+    FuelType? FuelType = null,
+    int? ManufactureYear = null,
+    decimal SecurityDeposit = 0);
 
 public record CarImageDto(int Id, string FilePath, bool IsPrimary);
 
@@ -27,7 +31,11 @@ public record CreateCarRequest(
     [Range(1, 16)] int Seats,
     [Range(0, 50)] int CarAgeYears,
     [Range(1, double.MaxValue)] decimal BasePricePerDay,
-    string? Description);
+    string? Description,
+    Transmission? Transmission = null,
+    FuelType? FuelType = null,
+    [Range(1990, 2100)] int? ManufactureYear = null,
+    [Range(0, 1_000_000_000)] decimal? SecurityDeposit = null);
 
 public record UpdateCarRequest(
     CarType CarType,
@@ -39,7 +47,14 @@ public record UpdateCarRequest(
     decimal BasePricePerDay,
     CarStatus Status,
     decimal? OverridePrice,
-    string? Description);
+    string? Description,
+    Transmission? Transmission = null,
+    FuelType? FuelType = null,
+    [Range(1990, 2100)] int? ManufactureYear = null,
+    [Range(0, 1_000_000_000)] decimal? SecurityDeposit = null);
+
+/// <summary>Admin duyệt xe chờ duyệt; có thể kèm đặt/sửa giá (bỏ trống thì giữ giá Staff đề xuất).</summary>
+public record ApproveCarRequest(decimal? BasePricePerDay = null, decimal? OverridePrice = null);
 
 public record CarFilterRequest(
     CarType? CarType,
@@ -47,4 +62,7 @@ public record CarFilterRequest(
     decimal? MaxPrice,
     CarStatus? Status,
     int Page = 1,
-    int PageSize = 10);
+    int PageSize = 10,
+    DateTime? AvailableFrom = null,
+    DateTime? AvailableTo = null,
+    bool IncludePending = false);

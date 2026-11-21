@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { primaryImageOf } from '../utils/imageUrl';
 import { useParams, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { formatCurrency } from '../utils/formatCurrency';
@@ -155,8 +156,8 @@ export default function BookingPage() {
 
       <div className="booking-summary">
         <div className="booking-car-info">
-          {(car.PrimaryImageUrl || car.primaryImageUrl) ? (
-            <img src={car.PrimaryImageUrl || car.primaryImageUrl} alt={`${car.Brand || car.brand} ${car.Model || car.model}`} style={{ width: 200, height: 140, objectFit: 'cover', borderRadius: 8 }} />
+          {primaryImageOf(car) ? (
+            <img src={primaryImageOf(car)} alt={`${car.Brand || car.brand} ${car.Model || car.model}`} style={{ width: 200, height: 140, objectFit: 'cover', borderRadius: 8 }} />
           ) : (
             <div style={{ width: 200, height: 140, background: '#e5e7eb', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 }}>🚗</div>
           )}

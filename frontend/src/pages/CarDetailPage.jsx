@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import ImageGallery from '../components/ImageGallery';
 import { formatCurrency } from '../utils/formatCurrency';
-import { carTypeLabel, normalizeCarStatus } from '../utils/carLabels';
+import { carTypeLabel, normalizeCarStatus, transmissionLabel, fuelLabel } from '../utils/carLabels';
 import useAuth from '../auth/AuthContext';
 
 /**
@@ -50,28 +50,6 @@ const CarDetailPage = () => {
     fetchCarDetail();
   }, [id]);
 
-  // Chuyển đổi tên hộp số sang tiếng Việt
-  const formatTransmission = (val) => {
-    if (val === 'Automatic') return 'Tự động';
-    if (val === 'Manual') return 'Số sàn';
-    return val || '—';
-  };
-
-  // Chuyển đổi loại nhiên liệu sang tiếng Việt
-  const formatFuelType = (val) => {
-    switch (val) {
-      case 'Gasoline':
-        return 'Xăng';
-      case 'Diesel':
-        return 'Dầu';
-      case 'Electric':
-        return 'Điện';
-      case 'Hybrid':
-        return 'Hybrid';
-      default:
-        return val || '—';
-    }
-  };
 
   // Hiển thị huy hiệu trạng thái của xe
   const renderStatusBadge = (rawStatus) => {
@@ -234,15 +212,15 @@ const CarDetailPage = () => {
               </tr>
               <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '10px 0', color: '#6b7280' }}>Hộp số</td>
-                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{formatTransmission(car.Transmission || car.transmission)}</td>
+                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{transmissionLabel(car.Transmission ?? car.transmission)}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '10px 0', color: '#6b7280' }}>Nhiên liệu</td>
-                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{formatFuelType(car.FuelType || car.fuelType)}</td>
+                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{fuelLabel(car.FuelType ?? car.fuelType)}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '10px 0', color: '#6b7280' }}>Năm sản xuất</td>
-                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{car.YearOfManufacture || car.yearOfManufacture || '—'}</td>
+                <td style={{ padding: '10px 0', fontWeight: '600', color: '#111827' }}>{car.ManufactureYear ?? car.manufactureYear ?? '—'}</td>
               </tr>
               <tr>
                 <td style={{ padding: '10px 0', color: '#6b7280' }}>Giá thuê / ngày</td>

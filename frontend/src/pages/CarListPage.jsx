@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import CarCard from '../components/CarCard';
 import Pagination from '../components/Pagination';
@@ -15,11 +16,14 @@ const CarListPage = () => {
   const pageSize = 12;
 
   // Bộ lọc tìm kiếm
+  const [searchParams] = useSearchParams();
   const [filters, setFilters] = useState({
-    type: '',
+    type: searchParams.get('type') || '',
     minPrice: '',
-    maxPrice: '',
+    maxPrice: searchParams.get('maxPrice') || '',
     status: '',
+    availableFrom: '',
+    availableTo: '',
   });
 
   const [loading, setLoading] = useState(true);
@@ -44,6 +48,11 @@ const CarListPage = () => {
       if (filters.minPrice) params.MinPrice = Number(filters.minPrice);
       if (filters.maxPrice) params.MaxPrice = Number(filters.maxPrice);
       if (filters.status) params.Status = filters.status;
+      // Chỉ lọc xe còn trống khi đã chọn đủ cả hai ngày (API từ chối nếu thiếu một đầu).
+      if (filters.availableFrom && filters.availableTo) {
+        params.AvailableFrom = filters.availableFrom;
+        params.AvailableTo = filters.availableTo;
+      }
       params.Page = params.page;
       params.PageSize = params.pageSize;
       delete params.page;
@@ -92,6 +101,8 @@ const CarListPage = () => {
       minPrice: '',
       maxPrice: '',
       status: '',
+      availableFrom: '',
+      availableTo: '',
     });
     setPage(1);
   };
@@ -176,8 +187,30 @@ const CarListPage = () => {
           </select>
         </div>
 
+        {/* Lọc xe còn trống theo khoảng ngày thuê */}
+        <div className="filter-group">
+          <label htmlFor="filter-available-from">Ngày nhận xe</label>
+          <input
+            id="filter-available-from"
+            type="date"
+            min={new Date().toISOString().split('T')[0]}
+            value={filters.availableFrom}
+            onChange={(e) => handleFilterChange('availableFrom', e.target.value)}
+          />
+        </div>
+        <div className="filter-group">
+          <label htmlFor="filter-available-to">Ngày trả xe</label>
+          <input
+            id="filter-available-to"
+            type="date"
+            min={filters.availableFrom || new Date().toISOString().split('T')[0]}
+            value={filters.availableTo}
+            onChange={(e) => handleFilterChange('availableTo', e.target.value)}
+          />
+        </div>
+
         {/* Nút đặt lại bộ lọc */}
-        {(filters.type || filters.minPrice || filters.maxPrice || filters.status) && (
+        {(filters.type || filters.minPrice || filters.maxPrice || filters.status || filters.availableFrom || filters.availableTo) && (
           <button
             type="button"
             className="btn btn-secondary btn-sm"
@@ -244,7 +277,7 @@ const CarListPage = () => {
             margin: '24px 0',
           }}
         >
-          <div style={{ fontSize: '3.5rem', marginBottom: '16px' }}>🔍</div>
+          
           <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
             Không tìm thấy xe nào phù hợp
           </h2>

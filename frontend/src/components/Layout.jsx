@@ -15,7 +15,7 @@ const Layout = () => {
       <main className="main-content">
         <Outlet />
       </main>
-      <footer className="footer">© 2025 Car Rental AI</footer>
+      <footer className="footer">© {new Date().getFullYear()} Car Rental AI</footer>
       <ChatWidget />
     </div>
   );

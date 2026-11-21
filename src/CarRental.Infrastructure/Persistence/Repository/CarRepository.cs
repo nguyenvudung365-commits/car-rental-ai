@@ -1,4 +1,5 @@
 using CarRental.Application.Modules.Cars;
+using CarRental.Domain.Common;
 using CarRental.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using CarEntity = CarRental.Domain.Modules.Cars.Car;
@@ -24,6 +25,8 @@ public class CarRepository : ICarRepository
     {
         var query = _context.Cars.Include(c => c.Images).AsQueryable();
 
+        if (!filter.IncludePending)
+            query = query.Where(c => c.Status != CarStatus.ChoDuyet);
         if (filter.CarType.HasValue)
             query = query.Where(c => c.CarType == filter.CarType);
         if (filter.MinPrice.HasValue)
@@ -32,6 +35,19 @@ public class CarRepository : ICarRepository
             query = query.Where(c => c.BasePricePerDay <= filter.MaxPrice);
         if (filter.Status.HasValue)
             query = query.Where(c => c.Status == filter.Status);
+
+        if (filter.AvailableFrom.HasValue && filter.AvailableTo.HasValue)
+        {
+            var from = filter.AvailableFrom.Value;
+            var to = filter.AvailableTo.Value;
+            // Cùng quy tắc với HasOverlapAsync: khoảng [Start, End) và chỉ tính đơn còn hiệu lực.
+            query = query.Where(c => !_context.Bookings.Any(b =>
+                b.CarId == c.Id && !b.IsDeleted
+                && (b.Status == BookingStatus.ChoXacNhan
+                    || b.Status == BookingStatus.DaXacNhan
+                    || b.Status == BookingStatus.DangThue)
+                && b.StartDate < to && b.EndDate > from));
+        }
 
         var total = await query.CountAsync();
         var items = await query.OrderBy(c => c.Id)

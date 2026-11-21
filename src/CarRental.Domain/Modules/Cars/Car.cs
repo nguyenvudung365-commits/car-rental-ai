@@ -22,6 +22,14 @@ public class Car : BaseEntity
 
     public int CarAgeYears { get; set; }
 
+    /// <summary>Hộp số (tùy chọn — xe cũ chưa có dữ liệu thì null).</summary>
+    public Transmission? Transmission { get; set; }
+
+    public FuelType? FuelType { get; set; }
+
+    /// <summary>Năm sản xuất (hiển thị cho khách; AI vẫn dùng CarAgeYears).</summary>
+    public int? ManufactureYear { get; set; }
+
     /// <summary>Giá niêm yết theo ngày, VNĐ. AI dự đoán trên nền giá này.</summary>
     public decimal BasePricePerDay { get; set; }
 
@@ -31,6 +39,9 @@ public class Car : BaseEntity
     public decimal? OverridePrice { get; set; }
 
     public string? Description { get; set; }
+
+    /// <summary>Tiền cọc bảo đảm khi nhận xe (0 = không thu cọc). Chỉ Admin đổi.</summary>
+    public decimal SecurityDeposit { get; set; }
 
     public ICollection<CarImage> Images { get; set; } = new List<CarImage>();
 

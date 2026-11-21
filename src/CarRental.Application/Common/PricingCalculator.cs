@@ -20,4 +20,8 @@ public static class PricingCalculator
         if (raw > MaxPricePerDay) return MaxPricePerDay;
         return raw;
     }
+
+    /// <summary>Phụ thu gia hạn = số ngày thêm × giá chốt/ngày (giá đã chốt của đơn, vẫn chặn trong [Min, Max]).</summary>
+    public static decimal ExtensionCharge(decimal finalPricePerDay, int extraDays)
+        => extraDays * ResolveFinalPricePerDay(null, null, finalPricePerDay);
 }

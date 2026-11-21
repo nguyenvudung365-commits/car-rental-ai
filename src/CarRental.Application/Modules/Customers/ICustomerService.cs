@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace CarRental.Application.Modules.Customers;
 
 /// <summary>Auth + hồ sơ khách — TV B implement theo docs/api-contract.md mục 1.</summary>
@@ -7,5 +9,8 @@ public interface ICustomerService
     Task<AuthResponse> LoginAsync(LoginRequest request);
     Task<CustomerDto?> GetByIdAsync(int id);
     Task UpdateProfileAsync(int customerId, UpdateProfileRequest request);
+    Task<ProfileDto> GetProfileAsync(int customerId);
+    Task ChangePasswordAsync(int customerId, ChangePasswordRequest request);
+    Task<AvatarDto> UpdateAvatarAsync(int customerId, IFormFile file);
 }
 

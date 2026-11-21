@@ -50,7 +50,10 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "mc alias set local http://minio:9000 $${MINIO_ACCESS_KEY} $${MINIO_SECRET_KEY}
-      && mc mb --ignore-existing local/$${MINIO_BUCKET}"
+      && mc mb --ignore-existing local/$${MINIO_BUCKET}
+      && mc anonymous set none local/$${MINIO_BUCKET}
+      && mc anonymous set download local/$${MINIO_BUCKET}/cars
+      && mc anonymous set download local/$${MINIO_BUCKET}/avatars"
     environment:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
@@ -68,7 +71,11 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:5001
       ConnectionStrings__Default: Server=db,1433;Database=${DB_NAME};User Id=${DB_USER};Password=${DB_PASSWORD};TrustServerCertificate=True
-      JwtSettings__SecretKey: ${JWT_KEY}
+      Jwt__Key: ${JWT_KEY}
+      Seed__AdminEmail: ${SEED_ADMIN_EMAIL:-}
+      Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:-}
+      Seed__StaffEmail: ${SEED_STAFF_EMAIL:-}
+      Seed__StaffPassword: ${SEED_STAFF_PASSWORD:-}
       AiService__BaseUrl: http://ai:5002
       AiService__TimeoutSeconds: ${AI_TIMEOUT_SECONDS}
       AiService__RetryCount: ${AI_RETRY_COUNT}

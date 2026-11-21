@@ -1,9 +1,12 @@
+using CarRental.API.DependencyInjection;
 using CarRental.API.Middleware;
 using CarRental.Application.Common;
 using CarRental.Application.Modules.Cars;
 using CarRental.Application.Modules.Customers;
+using CarRental.Application.Modules.Reports;
 using CarRental.Application.Modules.Bookings;
 using CarRental.Infrastructure.Ai;
+using CarRental.Infrastructure.Persistence.Audit;
 using CarRental.Infrastructure.Files;
 using CarRental.Infrastructure.Pdf;
 using CarRental.Infrastructure.Persistence;
@@ -12,6 +15,7 @@ using CarRental.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
@@ -58,8 +62,10 @@ builder.Services.AddCors(options =>
 
 
 // --- Database ---
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+builder.Services.AddAuditModule();
+builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Default"))
+           .AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>()));
 
 // --- JWT settings + authentication ---
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
@@ -93,6 +99,23 @@ builder.Services.AddAuthentication(options =>
         RoleClaimType = ClaimTypes.Role,
         NameClaimType = ClaimTypes.Name
     };
+    // Kiểm tra khóa tài khoản và vai trò trong DB ở mỗi request (1 truy vấn theo khóa chính),
+    // để khóa/đổi vai trò có hiệu lực ngay với token đã cấp.
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = async ctx =>
+        {
+            var sub = ctx.Principal?.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? ctx.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(sub, out var userId)) { ctx.Fail("Token không hợp lệ."); return; }
+            var db = ctx.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
+            var user = await db.Customers.AsNoTracking()
+                .Where(c => c.Id == userId)
+                .Select(c => new { c.IsLocked, c.Role })
+                .FirstOrDefaultAsync(ctx.HttpContext.RequestAborted);
+            if (user is null || user.IsLocked || user.Role.ToString() != ctx.Principal!.FindFirstValue(ClaimTypes.Role))
+                ctx.Fail("Phiên đăng nhập không còn hiệu lực.");
+        }
+    };
 });
 builder.Services.AddAuthorization();
 
@@ -101,6 +124,7 @@ builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddCustomersModule();
 
 // --- Dependency Injection: Car ---
 builder.Services.AddScoped<ICarRepository, CarRepository>();
@@ -115,10 +139,11 @@ builder.Services.AddHttpClient<IAiPricingClient, AiPricingClient>(client =>
 });
 
 // --- Dependency Injection: Booking ---
-builder.Services.AddScoped<IBookingRepository, BookingRepository>();
-builder.Services.AddScoped<IBookingService, BookingService>();
-builder.Services.AddSingleton<IContractPdfGenerator, ContractPdfGenerator>();
-builder.Services.AddScoped<IRentalService, RentalService>();
+builder.Services.AddBookingsModule();
+
+// --- Dependency Injection: Reports ---
+builder.Services.AddScoped<IReportRepository, ReportRepository>();
+builder.Services.AddScoped<ReportService>();
 
 // --- Unit of work ---
 builder.Services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());

@@ -4,6 +4,22 @@
 > Người viết: Nguyễn Vũ Dũng (nhóm trưởng) · Phiên bản: 1.1 · Cập nhật: 09/2026
 > Mọi thay đổi kiến trúc phải qua Pull Request + ADR mới.
 
+## Đối Chiếu Implementation Ngày 26/10/2026
+
+Các ADR bên dưới giữ bối cảnh/quyết định ban đầu; phần phân rã chức năng là phạm vi sản phẩm dự kiến, không xác nhận chức năng đã có. Contract thực tế xem [api-contract.md](api-contract.md), bản đồ code xem [architecture.md](architecture.md), hiện trạng xem [README](../README.md).
+
+Các đính chính theo code local (gồm thay đổi chưa commit):
+
+- Rule giá và orchestration booking nằm trong **Application** (`PricingCalculator`, `BookingService`); query overlap/khóa dòng nằm ở Infrastructure. Không phải toàn bộ rule đều ở Domain như lý do ban đầu của ADR-001.
+- Năng phụ trách `ai-service/` Python; .NET AI client đã có ở Infrastructure. ML và Gemini chưa tích hợp; FastAPI vẫn là stub.
+- Timeout là 2 giây **mỗi lần gọi**, retry 2 lần và backoff 200/400 ms; không đảm bảo deadline tổng 2 giây.
+- Frontend hiện là JavaScript/JSX, không phải TypeScript. Compose gồm năm dịch vụ chạy lâu dài và job `createbuckets`.
+- Đăng ký dùng tên/email/điện thoại/mật khẩu, không yêu cầu CCCD. Chỉ email/điện thoại/biển số có unique index; `IdentityNumber` chưa có unique index.
+- Các enum hiện bắt đầu từ 1; booking chưa có `Expired`, chưa có tự hết hạn, thu cọc để confirm hay hợp đồng PDF. Confirm hiện do Admin/Staff chuyển `ChoXacNhan` → `DaXacNhan`.
+- Booking 1-N Payment đã có model/migration; API thanh toán và nhận/trả xe chưa có. `PaymentStatus` thực tế là `ChuaThanhToan`, `DaCoc`, `DaThanhToan`, `DaHoanTien`.
+- Chatbot chưa có ngữ cảnh xe/booking, chưa có proxy .NET và không có chức năng tạo booking từ hội thoại.
+- Ngày 26/10/2026 bỏ hai hướng dẫn Jira cũ (backlog chia Epic theo tuần và guide dùng key CRA) vì khác backlog chính dùng CRAI. Bỏ DDL `erd.sql` sai schema; EF migrations là nguồn thực thi, `erd.dbml` được đối chiếu lại với model/snapshot.
+
 ---
 
 # PHẦN A — TẠI SAO CHỌN KIẾN TRÚC NÀY
@@ -121,7 +137,9 @@ React thống nhất TypeScript với team, Vite khởi động nhanh, SPA tách
 
 ---
 
-# PHẦN B — PHÂN RÃ CHỨC NĂNG & MÔ TẢ NGHIỆP VỤ
+# PHẦN B — PHẠM VI SẢN PHẨM DỰ KIẾN (THIẾT KẾ BAN ĐẦU)
+
+Phần này là thiết kế ban đầu để tham khảo lịch sử, không dùng làm contract hoặc trạng thái đã triển khai. Các tên trạng thái/luồng dự kiến có thể khác code hiện tại; ưu tiên phần đính chính ở đầu tài liệu và `api-contract.md` khi phát triển.
 
 ## B.1 Sơ đồ phân rã chức năng
 

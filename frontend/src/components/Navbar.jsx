@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FiMenu, FiX } from 'react-icons/fi';
+import { FiMenu, FiX, FiTruck } from 'react-icons/fi';
 import useAuth from '../auth/AuthContext';
+import { roleLabel } from '../utils/roleLabels';
+import { NAV_ITEMS } from '../utils/permissions';
+import TierBadge from './TierBadge';
 
 /**
  * Navbar - Thanh điều hướng chính của ứng dụng
@@ -9,7 +12,7 @@ import useAuth from '../auth/AuthContext';
  */
 const Navbar = () => {
   const auth = useAuth?.() || {};
-  const { user, token, logout } = auth;
+  const { user, token, logout, profile } = auth;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -21,7 +24,6 @@ const Navbar = () => {
   const isAuthenticated = Boolean(auth.isAuthenticated ?? (user || token));
   const isStaff = role === 'Staff';
   const isManager = role === 'Admin' || isStaff;
-  const isAdmin = role === 'Admin';
 
   // Xử lý đăng xuất người dùng
   const handleLogout = async () => {
@@ -46,7 +48,7 @@ const Navbar = () => {
       <div className="navbar-container">
         {/* Logo */}
         <Link to="/" className="navbar-logo" onClick={closeMenu}>
-          <span className="logo-icon">🚗</span>
+          <span className="logo-icon" aria-hidden="true"><FiTruck /></span>
           <span className="logo-text">Car Rental AI</span>
         </Link>
 
@@ -54,7 +56,7 @@ const Navbar = () => {
         <button
           type="button"
           className="navbar-hamburger"
-          aria-label="Toggle navigation"
+          aria-label="Mở menu điều hướng"
           onClick={() => setMenuOpen(!menuOpen)}
         >
           {menuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
@@ -63,6 +65,13 @@ const Navbar = () => {
         {/* Menu điều hướng chính trên Desktop */}
         <div className={`navbar-menu ${menuOpen ? 'is-active' : ''}`}>
           <div className="navbar-links">
+            <Link
+              to="/"
+              className={`navbar-link ${isActive('/') ? 'active' : ''}`}
+              onClick={closeMenu}
+            >
+              Trang chủ
+            </Link>
             <Link
               to="/cars"
               className={`navbar-link ${isActive('/cars') ? 'active' : ''}`}
@@ -85,43 +94,16 @@ const Navbar = () => {
             {/* Menu quản lý: Admin và Staff */}
             {isAuthenticated && isManager && (
               <>
-                <Link
-                  to="/admin/bookings"
-                  className={`navbar-link ${isActive('/admin/bookings') ? 'active' : ''}`}
-                  onClick={closeMenu}
-                >
-                  Quản lý đơn
-                </Link>
-                <Link
-                  to="/admin/returns"
-                  className={`navbar-link ${isActive('/admin/returns') ? 'active' : ''}`}
-                  onClick={closeMenu}
-                >
-                  Trả xe
-                </Link>
-                <Link
-                  to="/admin/cars"
-                  className={`navbar-link ${isActive('/admin/cars') ? 'active' : ''}`}
-                  onClick={closeMenu}
-                >
-                  Quản lý xe
-                </Link>
-                <Link
-                  to="/admin/car-images"
-                  className={`navbar-link ${isActive('/admin/car-images') ? 'active' : ''}`}
-                  onClick={closeMenu}
-                >
-                  Ảnh xe
-                </Link>
-                {isAdmin && (
+                {NAV_ITEMS.filter((i) => i.roles.includes(role)).map((i) => (
                   <Link
-                    to="/admin/reports"
-                    className={`navbar-link ${isActive('/admin/reports') ? 'active' : ''}`}
+                    key={i.to}
+                    to={i.to}
+                    className={`navbar-link ${isActive(i.to) ? 'active' : ''}`}
                     onClick={closeMenu}
                   >
-                    Báo cáo
+                    {i.label}
                   </Link>
-                )}
+                ))}
               </>
             )}
           </div>
@@ -132,7 +114,7 @@ const Navbar = () => {
               <div className="auth-user-info">
                 <span className="user-name">
                   {fullName}
-                  {isManager && <span className="admin-badge">{isAdmin ? 'Admin' : 'Staff'}</span>}
+                  {isManager && <span className="admin-badge">{roleLabel(role)}</span>}
                 </span>
                 <button
                   type="button"
