@@ -17,6 +17,14 @@ public static class BookingsRegistration
         services.AddScoped<RentalService>();
         services.AddScoped<IRentalService>(sp =>
             ActivatorUtilities.CreateInstance<RentalServiceGuard>(sp, sp.GetRequiredService<RentalService>()));
+        // Đợt 3: biên bản bàn giao, cọc bảo đảm, gia hạn. DepositService dùng RentalService gốc để Guard không tạo vòng phụ thuộc.
+        services.AddScoped<IHandoverRepository, HandoverRepository>();
+        services.AddScoped<IHandoverService, HandoverService>();
+        services.AddScoped<IDepositRepository, DepositRepository>();
+        services.AddScoped<IDepositService>(sp =>
+            ActivatorUtilities.CreateInstance<DepositService>(sp, sp.GetRequiredService<RentalService>()));
+        services.AddScoped<IBookingExtensionRepository, BookingExtensionRepository>();
+        services.AddScoped<IBookingExtensionService, BookingExtensionService>();
         return services;
     }
 }

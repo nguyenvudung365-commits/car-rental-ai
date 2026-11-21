@@ -18,7 +18,8 @@ public record CarDto(
     List<CarImageDto> Images,
     Transmission? Transmission = null,
     FuelType? FuelType = null,
-    int? ManufactureYear = null);
+    int? ManufactureYear = null,
+    decimal SecurityDeposit = 0);
 
 public record CarImageDto(int Id, string FilePath, bool IsPrimary);
 
@@ -33,7 +34,8 @@ public record CreateCarRequest(
     string? Description,
     Transmission? Transmission = null,
     FuelType? FuelType = null,
-    [Range(1990, 2100)] int? ManufactureYear = null);
+    [Range(1990, 2100)] int? ManufactureYear = null,
+    [Range(0, 1_000_000_000)] decimal? SecurityDeposit = null);
 
 public record UpdateCarRequest(
     CarType CarType,
@@ -48,7 +50,8 @@ public record UpdateCarRequest(
     string? Description,
     Transmission? Transmission = null,
     FuelType? FuelType = null,
-    [Range(1990, 2100)] int? ManufactureYear = null);
+    [Range(1990, 2100)] int? ManufactureYear = null,
+    [Range(0, 1_000_000_000)] decimal? SecurityDeposit = null);
 
 /// <summary>Admin duyệt xe chờ duyệt; có thể kèm đặt/sửa giá (bỏ trống thì giữ giá Staff đề xuất).</summary>
 public record ApproveCarRequest(decimal? BasePricePerDay = null, decimal? OverridePrice = null);

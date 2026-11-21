@@ -4,7 +4,7 @@ using CarRental.Domain.Common;
 namespace CarRental.Application.Modules.Bookings;
 
 public record CreatePaymentRequest(
-    [Range(typeof(decimal), "0.01", "1000000000")] decimal Amount,
+    [Range(typeof(decimal), "0.01", "1000000000", ParseLimitsInInvariantCulture = true, ConvertValueInInvariantCulture = true)] decimal Amount,
     [Required] PaymentMethod Method,
     [StringLength(100)] string? TransactionCode
 );
@@ -36,7 +36,7 @@ public record BookingPaymentsDto(
 
 public record ReturnBookingRequest(
     DateTime? ReturnedAt,
-    [Range(typeof(decimal), "0", "1000000000")] decimal DamageFee,
+    [Range(typeof(decimal), "0", "1000000000", ParseLimitsInInvariantCulture = true, ConvertValueInInvariantCulture = true)] decimal DamageFee,
     [StringLength(1000)] string? DamageNote
 );
 
