@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using CarRental.Application.Modules.Pricing;
+using CarRental.Domain.Common;
 
 namespace CarRental.Application.Modules.Bookings;
 
@@ -19,14 +21,28 @@ public record BookingDto(
     string Status,
     string? CorrelationId,
     string? Note,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    RentalMode Mode = RentalMode.TheoNgay,
+    bool WithDriver = false,
+    string? DeliveryAddress = null,
+    string? ReturnAddress = null,
+    int? PickupBranchId = null,
+    int? ReturnBranchId = null,
+    IReadOnlyList<ChargeLineDto>? Charges = null
 );
 
 public record CreateBookingRequest(
     [Required] int CarId,
     [Required] DateTime StartDate,
     [Required] DateTime EndDate,
-    string? Note
+    string? Note,
+    RentalMode? Mode = null,
+    bool WithDriver = false,
+    string? CouponCode = null,
+    string? DeliveryAddress = null,
+    string? ReturnAddress = null,
+    int? PickupBranchId = null,
+    int? ReturnBranchId = null
 );
 
 public record BookingFilterRequest(
@@ -55,7 +71,14 @@ public record BookedRangeDto(DateTime StartDate, DateTime EndDate);
 public record EstimateBookingRequest(
     [Required] int CarId,
     [Required] DateTime StartDate,
-    [Required] DateTime EndDate
+    [Required] DateTime EndDate,
+    RentalMode? Mode = null,
+    bool WithDriver = false,
+    string? CouponCode = null,
+    string? DeliveryAddress = null,
+    string? ReturnAddress = null,
+    int? PickupBranchId = null,
+    int? ReturnBranchId = null
 );
 
 public record BookingEstimateDto(
@@ -64,5 +87,7 @@ public record BookingEstimateDto(
     decimal? PredictedPricePerDay,
     decimal FinalPricePerDay,
     decimal TotalPrice,
-    bool IsFallback
+    bool IsFallback,
+    decimal RentalAmount = 0,
+    IReadOnlyList<ChargeLineDto>? Charges = null
 );

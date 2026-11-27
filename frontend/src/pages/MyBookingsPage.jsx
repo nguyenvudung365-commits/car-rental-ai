@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import PriceBreakdown from '../components/PriceBreakdown';
+import { formatLocalDateTime } from '../utils/utcTime';
 import axiosClient from '../api/axiosClient';
 import { formatCurrency } from '../utils/formatCurrency';
 import PaymentsModal from '../components/PaymentsModal';
@@ -48,7 +50,7 @@ export default function MyBookingsPage() {
     fetchBookings();
   }, []);
 
-  const fmtRange = (b) => `${formatDate(b.StartDate)} → ${formatDate(b.EndDate)}`;
+  const fmtRange = (b) => b.Mode === 2 ? `${formatLocalDateTime(b.StartDate)} → ${formatLocalDateTime(b.EndDate)}` : `${formatDate(b.StartDate)} → ${formatDate(b.EndDate)}`;
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     try {
@@ -214,9 +216,13 @@ export default function MyBookingsPage() {
                   <p style={{ color: '#6b7280', margin: '4px 0' }}>Biển số: {b.LicensePlate}</p>
                   <p style={{ margin: '4px 0' }}>📅 {fmtRange(b)}</p>
                   <p style={{ margin: '4px 0' }}>⏱️ {b.RentalDays} ngày</p>
+                  {b.Charges?.length > 0 ? (
+                    <PriceBreakdown rentalAmount={b.TotalPrice - b.Charges.reduce((t, c) => t + c.Amount, 0)} charges={b.Charges} total={b.TotalPrice} />
+                  ) : (
                     <p style={{ fontWeight: 600, color: '#2563eb', margin: '4px 0' }}>
                       {formatCurrency(b.TotalPrice)}
                     </p>
+                  )}
                   {canCancel && (
                     <button
                       onClick={() => openCancelModal(b)}

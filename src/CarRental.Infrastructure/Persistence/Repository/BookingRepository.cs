@@ -24,7 +24,8 @@ public class BookingRepository : IBookingRepository
                 .Include(b => b.Customer)
                 .Include(b => b.Car)
                 .Include(b => b.Payments)
-                .Include(b => b.ReturnRecord);
+                .Include(b => b.ReturnRecord)
+                .Include(b => b.Charges.Where(c => !c.IsDeleted));
         }
 
         return await query.FirstOrDefaultAsync(b => b.Id == id);
@@ -37,6 +38,7 @@ public class BookingRepository : IBookingRepository
         var query = _context.Bookings
             .Include(b => b.Customer)
             .Include(b => b.Car)
+            .Include(b => b.Charges.Where(c => !c.IsDeleted))
             .AsQueryable();
 
         if (customerId.HasValue)

@@ -10,6 +10,7 @@ import AdminDocumentsPage from '../pages/admin/AdminDocumentsPage';
 import AdminCustomersPage from '../pages/admin/AdminCustomersPage';
 import AdminCustomerDetailPage from '../pages/admin/AdminCustomerDetailPage';
 import AdminHandoverPage from '../pages/admin/AdminHandoverPage';
+import AdminPricingPage from '../pages/admin/AdminPricingPage';
 
 export const adminRoutes = [
   { path: '/admin/bookings', element: <AdminBookingsPage />, roles: ['Staff', 'Admin'] },
@@ -21,6 +22,7 @@ export const adminRoutes = [
   { path: '/admin/documents', element: <AdminDocumentsPage />, roles: ['Staff', 'Admin'] },
   { path: '/admin/blacklist', element: <AdminBlacklistPage />, roles: ['Staff', 'Admin'] },
   { path: '/admin/reports', element: <AdminReportsPage />, roles: ['Admin'] },
+  { path: '/admin/pricing', element: <AdminPricingPage />, roles: ['Admin'] },
   { path: '/admin/users', element: <AdminUsersPage />, roles: ['Admin'] },
   { path: '/admin/audit-logs', element: <AdminAuditLogsPage />, roles: ['Admin'] },
 ];

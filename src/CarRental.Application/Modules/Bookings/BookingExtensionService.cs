@@ -130,6 +130,8 @@ public class BookingExtensionService : IBookingExtensionService
         var booking = await LoadAsync(bookingId, customerId);
         if (booking.Status is not (BookingStatus.DaXacNhan or BookingStatus.DangThue))
             throw new ConflictException("INVALID_STATUS", "Chỉ gia hạn booking đã xác nhận hoặc đang thuê.");
+        if (booking.Mode == RentalMode.TheoGio)
+            throw new ConflictException("HOURLY_NOT_EXTENDABLE", "Đơn thuê theo giờ không gia hạn được, hãy đặt đơn mới.");
         return booking;
     }
 

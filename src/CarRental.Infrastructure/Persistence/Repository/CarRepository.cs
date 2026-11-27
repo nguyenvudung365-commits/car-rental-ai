@@ -27,6 +27,8 @@ public class CarRepository : ICarRepository
 
         if (!filter.IncludePending)
             query = query.Where(c => c.Status != CarStatus.ChoDuyet);
+        if (filter.BranchId.HasValue)
+            query = query.Where(c => c.BranchId == filter.BranchId);
         if (filter.CarType.HasValue)
             query = query.Where(c => c.CarType == filter.CarType);
         if (filter.MinPrice.HasValue)

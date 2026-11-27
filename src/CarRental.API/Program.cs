@@ -139,7 +139,7 @@ builder.Services.AddHttpClient<IAiPricingClient, AiPricingClient>(client =>
 });
 
 // --- Dependency Injection: Booking ---
-builder.Services.AddBookingsModule();
+builder.Services.AddBookingsModule(builder.Configuration);
 
 // --- Dependency Injection: Reports ---
 builder.Services.AddScoped<IReportRepository, ReportRepository>();

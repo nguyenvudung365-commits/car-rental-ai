@@ -40,6 +40,20 @@ public class Booking : BaseEntity
 
     public string? Note { get; set; }
 
+    public RentalMode Mode { get; set; } = RentalMode.TheoNgay;
+
+    public bool WithDriver { get; set; }
+
+    public string? DeliveryAddress { get; set; }
+
+    public string? ReturnAddress { get; set; }
+
+    public int? PickupBranchId { get; set; }
+
+    public int? ReturnBranchId { get; set; }
+
+    public ICollection<Pricing.BookingCharge> Charges { get; set; } = new List<Pricing.BookingCharge>();
+
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
     public ReturnRecord? ReturnRecord { get; set; }

@@ -145,3 +145,34 @@ public enum LoyaltyReason
     TichDiem = 1,
     DieuChinh = 2
 }
+
+
+/// <summary>Chế độ thuê: theo ngày (mặc định) hoặc theo giờ (4 đến 12 giờ).</summary>
+public enum RentalMode
+{
+    TheoNgay = 1,
+    TheoGio = 2
+}
+
+public enum CouponType
+{
+    PhanTram = 1,
+    SoTien = 2
+}
+
+public enum SurchargeType
+{
+    CoDinh = 1,
+    TheoNgay = 2,
+    PhanTram = 3
+}
+
+/// <summary>Loại dòng phí của đơn. GiamGia mang số âm.</summary>
+public enum ChargeKind
+{
+    PhuPhi = 1,
+    GiamGia = 2,
+    TaiXe = 3,
+    GiaoNhan = 4,
+    MotChieu = 5
+}

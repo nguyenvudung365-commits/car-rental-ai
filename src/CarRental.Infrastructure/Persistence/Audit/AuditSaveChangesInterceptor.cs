@@ -2,8 +2,10 @@ using System.Text.Json;
 using CarRental.Application.Common;
 using CarRental.Domain.Modules.Audit;
 using CarRental.Domain.Modules.Bookings;
+using CarRental.Domain.Modules.Branches;
 using CarRental.Domain.Modules.Cars;
 using CarRental.Domain.Modules.Customers;
+using CarRental.Domain.Modules.Pricing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -19,7 +21,7 @@ public class AuditSaveChangesInterceptor : SaveChangesInterceptor
     // Thêm entity mới của các đợt sau vào đây.
     private static readonly HashSet<Type> Whitelist =
         [typeof(Car), typeof(Booking), typeof(Payment), typeof(ReturnRecord), typeof(Customer), typeof(BlacklistEntry),
-         typeof(CustomerDocument), typeof(LoyaltyTransaction), typeof(HandoverRecord), typeof(DepositTransaction), typeof(BookingExtension)];
+         typeof(CustomerDocument), typeof(LoyaltyTransaction), typeof(HandoverRecord), typeof(DepositTransaction), typeof(BookingExtension), typeof(Coupon), typeof(Surcharge), typeof(Branch)];
 
     private const int MaxChangesLength = 8000;
 
