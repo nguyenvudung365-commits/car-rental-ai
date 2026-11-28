@@ -97,7 +97,7 @@ public sealed class Wave3ApiTests : IClassFixture<ApiFixture>
     }
 
     [LocalDbFact]
-    public async Task Handover_Nhan_Rules_StatusGiaoRequiredOdometerAndOnce()
+    public async Task Handover_Nhan_Rules_StatusOdometerAndOnce()
     {
         var u = await _fx.SeedUser(UserRole.Customer);
         var staff = await _fx.As(UserRole.Staff);
@@ -108,10 +108,6 @@ public sealed class Wave3ApiTests : IClassFixture<ApiFixture>
         Assert.Equal("INVALID_STATUS", await Code(wrongStatus));
 
         var renting = await SeedBooking(u.Id, await _fx.SeedCar(CarStatus.DangThue), BookingStatus.DangThue, -3, 0);
-        var noGiao = await PostHandover(staff, renting, 2);
-        Assert.Equal(HttpStatusCode.Conflict, noGiao.StatusCode);
-        Assert.Equal("HANDOVER_REQUIRED", await Code(noGiao));
-
         await using (var db = _fx.NewContext())
         {
             db.Set<HandoverRecord>().Add(new HandoverRecord { BookingId = renting, Type = HandoverType.Giao, Odometer = 5000, FuelLevel = 80 });
@@ -224,7 +220,7 @@ public sealed class Wave3ApiTests : IClassFixture<ApiFixture>
     }
 
     [LocalDbFact]
-    public async Task Return_RequiresNhanHandover_AndNoStateChangeWhenBlocked()
+    public async Task Return_LegacyRental_RequiresOnlyRecordedReturnHandover()
     {
         var u = await _fx.SeedUser(UserRole.Customer);
         var bk = await SeedBooking(u.Id, await _fx.SeedCar(CarStatus.DangThue), BookingStatus.DangThue, -3, 0);
@@ -233,9 +229,18 @@ public sealed class Wave3ApiTests : IClassFixture<ApiFixture>
         var r = await staff.PostAsJsonAsync($"/api/bookings/{bk}/return", new { ReturnedAt = DateTime.UtcNow.Date, DamageFee = 0 });
         Assert.Equal(HttpStatusCode.Conflict, r.StatusCode);
         Assert.Equal("HANDOVER_REQUIRED", await Code(r));
-        await using var db = _fx.NewContext();
-        Assert.Equal(BookingStatus.DangThue, (await db.Bookings.SingleAsync(b => b.Id == bk)).Status);
-        Assert.False(await db.Set<ReturnRecord>().AnyAsync(x => x.BookingId == bk));
+        await using (var db = _fx.NewContext())
+        {
+            Assert.Equal(BookingStatus.DangThue, (await db.Bookings.SingleAsync(b => b.Id == bk)).Status);
+            Assert.False(await db.Set<ReturnRecord>().AnyAsync(x => x.BookingId == bk));
+        }
+
+        Assert.Equal(HttpStatusCode.Created, (await PostHandover(staff, bk, 2)).StatusCode);
+        var returned = await staff.PostAsJsonAsync($"/api/bookings/{bk}/return", new { ReturnedAt = DateTime.UtcNow.Date, DamageFee = 0 });
+        Assert.Equal(HttpStatusCode.OK, returned.StatusCode);
+        await using var updated = _fx.NewContext();
+        Assert.Equal(BookingStatus.DaTraXe, (await updated.Bookings.SingleAsync(b => b.Id == bk)).Status);
+        Assert.False(await updated.Set<HandoverRecord>().AnyAsync(x => x.BookingId == bk && x.Type == HandoverType.Giao));
     }
 
     [LocalDbFact]
