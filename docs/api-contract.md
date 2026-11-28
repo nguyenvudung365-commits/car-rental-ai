@@ -50,6 +50,7 @@ Update profile request: `FullName`, `IdentityNumber`, `Address`. Không có `GET
 | POST | `/api/cars/{carId}/images` | Admin/Staff | 200 `CarImageDto` |
 | PUT | `/api/cars/{carId}/images/{imageId}/primary` | Admin/Staff | 204 |
 | DELETE | `/api/cars/{carId}/images/{imageId}` | Admin/Staff | 204 |
+| GET | `/api/media/{key}` | Public | 200 WebP cho key dưới `cars/` hoặc `avatars/`; key riêng tư hoặc ảnh không tồn tại: 404 |
 
 Filter xe: `CarType`, `MinPrice`, `MaxPrice`, `Status`, `Page=1`, `PageSize=10`, `AvailableFrom`, `AvailableTo`. Giá lọc là `BasePricePerDay`, không phải giá AI. Chưa có filter số chỗ, nhiên liệu hoặc hộp số.
 
@@ -63,7 +64,7 @@ Create request: `CarType`, `Brand`, `Model`, `LicensePlate`, `Seats`, `CarAgeYea
 
 Update request thêm `Status`, `OverridePrice`. Biển số trùng trả 409 `PLATE_EXISTS`. Xóa xe đang có `Status = DangThue` trả 409 `CAR_IN_USE`; code hiện xóa cứng, chưa kiểm tra mọi booking tương lai của xe.
 
-Upload dùng multipart field `file`, chỉ nhận WebP tối đa 5 MB, kiểm tra extension/MIME/header. `CarImageDto` có `Id`, `FilePath`, `IsPrimary`. `FilePath` hiện là object key dạng `cars/<guid>.webp`, không phải URL công khai đầy đủ. Ảnh đầu là ảnh chính; khi xóa ảnh chính, service chọn ảnh có ID nhỏ nhất còn lại. URL truy cập ảnh và casing phía UI còn cần đối chiếu khi tích hợp.
+Upload dùng multipart field `file`, chỉ nhận WebP tối đa 5 MB, kiểm tra extension/MIME/header. `CarImageDto` có `Id`, `FilePath`, `IsPrimary`. `FilePath` chứa object key dạng `cars/<guid>.webp`. Frontend mặc định tải ảnh xe và avatar từ `/api/media/{key}` trên cùng origin. Ảnh đầu là ảnh chính; khi xóa ảnh chính, service chọn ảnh có ID nhỏ nhất còn lại.
 
 ## 4. Đặt Xe Và Báo Giá
 
@@ -128,6 +129,7 @@ Nguồn: `RentalController.cs`, `RentalService.cs`. Tất cả yêu cầu đăng
 - Mark-paid: `Status` chỉ nhận 2 (`DaCoc`) hoặc 3 (`DaThanhToan`), chỉ áp dụng cho payment đang `ChuaThanhToan`, ghi `PaidAt`.
 - `BookingPaymentsDto`: `Items`, `TotalPrice`, `AmountToPay`, `PaidAmount` (chỉ tính `DaCoc`/`DaThanhToan`), `AmountDue`.
 - Return request: `ReturnedAt` (tùy chọn, mặc định bây giờ), `DamageFee` (>= 0), `DamageNote`. Không cho trước `StartDate`. Chỉ nhận khi booking `DangThue`; đã có biên bản: 409 `RETURN_EXISTS`.
+- Đơn đang thuê từ phiên bản cũ có thể lập biên bản nhận khi thiếu biên bản giao. Nếu đã có biên bản giao, số km khi nhận phải lớn hơn hoặc bằng số km khi giao.
 - Công thức: `LateDays = max(0, ngày trả − ngày EndDate)` (theo ngày lịch); `LateFee = LateDays × FinalPricePerDay`; `FinalAmount = TotalPrice + LateFee + DamageFee`. `StaffId` lấy từ JWT.
 - `ReturnRecordDto`: `BookingId`, `ReturnedAt`, `EndDate`, `LateDays`, `LateFee`, `DamageFee`, `DamageNote`, `TotalPrice`, `FinalAmount`, `StaffId`.
 - Chưa tự đổi `Car.Status` theo vòng đời thuê, chưa có refund/`DaHoanTien` qua API, chưa có hợp đồng PDF.

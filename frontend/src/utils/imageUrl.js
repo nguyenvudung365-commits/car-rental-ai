@@ -1,11 +1,11 @@
-// API trả FilePath dạng object key "cars/<guid>.webp"; ghép với địa chỉ công khai của MinIO.
-const BASE = import.meta.env.VITE_MEDIA_BASE_URL || 'http://localhost:9100/car-rental';
+// API trả object key; mặc định tải ảnh qua API cùng origin với frontend.
+const BASE = import.meta.env.VITE_MEDIA_BASE_URL || '/api/media';
 
 export const imageUrl = (img) => {
   if (!img) return '';
   if (img.url) return img.url;
   const path = img.FilePath ?? img.filePath;
-  return path ? `${BASE}/${path}` : '';
+  return path ? `${BASE}/${path.split('/').map(encodeURIComponent).join('/')}` : '';
 };
 
 export const isPrimaryImage = (img) => Boolean(img?.isThumbnail ?? img?.IsPrimary ?? img?.isPrimary);

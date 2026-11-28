@@ -37,9 +37,9 @@ public class HandoverService : IHandoverService
         {
             if (booking.Status != BookingStatus.DangThue)
                 throw new ConflictException("INVALID_STATUS", "Chỉ lập biên bản nhận cho booking đang thuê.");
-            var giao = await _handovers.GetByBookingAsync(bookingId, HandoverType.Giao)
-                ?? throw new ConflictException("HANDOVER_REQUIRED", "Booking chưa có biên bản giao xe.");
-            if (request.Odometer < giao.Odometer)
+            // Đơn đã giao trước khi có biên bản vẫn ghi nhận số km thực tế lúc trả.
+            var giao = await _handovers.GetByBookingAsync(bookingId, HandoverType.Giao);
+            if (giao is not null && request.Odometer < giao.Odometer)
                 throw new BadRequestException("ODOMETER_DECREASED", $"Số km lúc nhận không được nhỏ hơn lúc giao ({giao.Odometer}).");
         }
 
