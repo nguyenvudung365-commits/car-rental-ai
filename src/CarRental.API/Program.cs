@@ -139,11 +139,12 @@ builder.Services.AddHttpClient<IAiPricingClient, AiPricingClient>(client =>
 });
 
 // --- Dependency Injection: Booking ---
-builder.Services.AddBookingsModule();
+builder.Services.AddBookingsModule(builder.Configuration);
 
 // --- Dependency Injection: Reports ---
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<ReportService>();
+builder.Services.AddFleetOpsModule();
 
 // --- Unit of work ---
 builder.Services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());

@@ -132,6 +132,14 @@ public class RentalService : IRentalService
 
         var (lateDays, lateFee, finalAmount) = CalculateReturn(
             booking.EndDate, returnedAt, booking.FinalPricePerDay, booking.TotalPrice, request.DamageFee);
+        if (booking.Mode == RentalMode.TheoGio)
+        {
+            // Đơn theo giờ: trễ tính theo giờ với giá giờ của xe; LateDays luôn 0.
+            lateDays = 0;
+            var lateHours = Math.Max(0, (decimal)Math.Ceiling((returnedAt - booking.EndDate).TotalHours));
+            lateFee = Math.Round(lateHours * (booking.Car?.PricePerHour ?? 0m), 0);
+            finalAmount = booking.TotalPrice + lateFee + request.DamageFee;
+        }
 
         var record = new ReturnRecord
         {
@@ -148,6 +156,8 @@ public class RentalService : IRentalService
 
         booking.Status = BookingStatus.DaTraXe;
         if (booking.Car is { Status: CarStatus.DangThue }) booking.Car.Status = CarStatus.SanSang;
+        // Trả khác chi nhánh: xe chuyển về chi nhánh trả.
+        if (booking.Car != null && booking.ReturnBranchId.HasValue) booking.Car.BranchId = booking.ReturnBranchId;
         booking.UpdatedAt = DateTime.UtcNow;
         await _bookingRepository.AddReturnRecordAsync(record);
         await _unitOfWork.SaveChangesAsync();
@@ -178,7 +188,7 @@ public class RentalService : IRentalService
             booking.Id, booking.Status.ToString(), booking.CreatedAt,
             c?.FullName ?? "", c?.Email ?? "", c?.PhoneNumber ?? "", c?.IdentityNumber, c?.Address,
             car == null ? "" : $"{car.Brand} {car.Model}", car?.LicensePlate ?? "", car?.Seats ?? 0,
-            booking.StartDate, booking.EndDate, (booking.EndDate - booking.StartDate).Days,
+            booking.StartDate, booking.EndDate, Math.Max(1, (booking.EndDate - booking.StartDate).Days),
             booking.FinalPricePerDay, booking.TotalPrice,
             r?.ReturnedAt, r?.LateDays, r?.LateFee, r?.DamageFee, r?.FinalAmount);
 

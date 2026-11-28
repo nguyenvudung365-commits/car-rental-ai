@@ -1,4 +1,5 @@
 using CarRental.Application.Modules.Bookings;
+using CarRental.Application.Modules.Pricing;
 using CarRental.Infrastructure.Pdf;
 using CarRental.Infrastructure.Persistence.Repository;
 
@@ -9,6 +10,12 @@ public static class BookingsRegistration
     /// <summary>Đặt xe/thuê xe: service thật được bọc bởi decorator Guard (luật chặn đặt ở Guard, không sửa service gốc).</summary>
     public static IServiceCollection AddBookingsModule(this IServiceCollection services, IConfiguration? configuration = null)
     {
+        // Đợt 4: phí/mã giảm giá/chi nhánh. Phí cố định lấy từ section "Pricing" (mặc định trong PricingOptions).
+        services.AddSingleton(configuration?.GetSection("Pricing").Get<PricingOptions>() ?? new PricingOptions());
+        services.AddScoped<IPricingRepository, PricingRepository>();
+        services.AddScoped<BookingChargeCalculator>();
+        services.AddScoped<IBookingChargeCalculator>(sp => sp.GetRequiredService<BookingChargeCalculator>());
+        services.AddScoped<PricingAdminService>();
         services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<BookingService>();
         services.AddScoped<IBookingService>(sp =>

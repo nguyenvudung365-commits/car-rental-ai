@@ -5,7 +5,9 @@ import PaymentsModal from '../../components/PaymentsModal';
 import ExtendBookingModal from '../../components/ExtendBookingModal';
 import PendingExtensionsPanel from '../../components/PendingExtensionsPanel';
 import { useNavigate } from 'react-router-dom';
+import { formatLocalDateTime } from '../../utils/utcTime';
 import BlacklistBadge from '../../components/BlacklistBadge';
+import { downloadFile } from '../../utils/downloadBlob';
 
 /**
  * Trang Quản lý Đơn thuê (AdminBookingsPage)
@@ -268,6 +270,14 @@ const AdminBookingsPage = () => {
         <p style={{ color: '#6b7280', marginTop: '6px', fontSize: '0.95rem' }}>
           Xem danh sách đơn đặt xe, duyệt đơn chờ duyệt, hủy đơn và điều chỉnh giá thuê.
         </p>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => downloadFile('/bookings/export', { status: statusFilter === 'ALL' ? undefined : statusFilter }, 'don-thue.xlsx')
+            .catch((e) => setNotification({ type: 'error', message: e.message }))}
+        >
+          Xuất Excel
+        </button>
       </div>
 
       <PendingExtensionsPanel onChanged={fetchBookings} />
@@ -506,9 +516,9 @@ const AdminBookingsPage = () => {
                         </span>
                       </td>
                       <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
-                        {formatDate(b.StartDate)}
+                        {b.Mode === 2 ? formatLocalDateTime(b.StartDate) : formatDate(b.StartDate)}
                         <span style={{ color: '#9ca3af', margin: '0 4px' }}>→</span>
-                        {formatDate(b.EndDate)}
+                        {b.Mode === 2 ? formatLocalDateTime(b.EndDate) : formatDate(b.EndDate)}
                       </td>
                       <td style={{ padding: '14px 16px', fontWeight: '700', color: '#047857', whiteSpace: 'nowrap' }}>
                         {renderPrice(b.TotalPrice)}

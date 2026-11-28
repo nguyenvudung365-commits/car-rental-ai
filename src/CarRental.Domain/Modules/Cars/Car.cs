@@ -43,6 +43,12 @@ public class Car : BaseEntity
     /// <summary>Tiền cọc bảo đảm khi nhận xe (0 = không thu cọc). Chỉ Admin đổi.</summary>
     public decimal SecurityDeposit { get; set; }
 
+    /// <summary>Chi nhánh xe đang đỗ (null = chưa gán). Cập nhật khi trả xe ở chi nhánh khác.</summary>
+    public int? BranchId { get; set; }
+
+    /// <summary>Giá thuê theo giờ (null = xe không cho thuê theo giờ).</summary>
+    public decimal? PricePerHour { get; set; }
+
     public ICollection<CarImage> Images { get; set; } = new List<CarImage>();
 
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
